@@ -25,6 +25,17 @@ $Ifs.ElseClause
 [System.Management.Automation.Language.WhileStatementAst]
 # pipelineast pour les foreach-object/where-object
 
+#Du coup ça nous retourne ce qu'on cherche la...
+$a = @([System.Management.Automation.Language.IfStatementAst],
+[System.Management.Automation.Language.SwitchStatementAst],
+[System.Management.Automation.Language.ForEachStatementAst],
+[System.Management.Automation.Language.ForStatementAst],
+[System.Management.Automation.Language.DoUntilStatementAst],
+[System.Management.Automation.Language.DoWhileStatementAst],
+[System.Management.Automation.Language.WhileStatementAst])
+
+$plop = $RawAstDocument.FindAll({$args[0].GetType() -in $a})
+
 ## determiner des icones par type d'objet
 ## essayer de faire un deroulement simple dans un premier temps
 ## moi ce que je vois:
