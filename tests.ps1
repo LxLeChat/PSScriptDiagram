@@ -34,3 +34,46 @@ $Ifs.ElseClause
 
 ## stephane
 ## se baser sur des commentaires spéciaux ?
+
+
+$a = @([System.Management.Automation.Language.IfStatementAst],
+[System.Management.Automation.Language.SwitchStatementAst],
+[System.Management.Automation.Language.ForEachStatementAst],
+[System.Management.Automation.Language.ForStatementAst],
+[System.Management.Automation.Language.DoUntilStatementAst],
+[System.Management.Automation.Language.DoWhileStatementAst],
+[System.Management.Automation.Language.WhileStatementAst])
+
+$b = @(
+    [System.Management.Automation.Language.LoopStatementAst],
+    [System.Management.Automation.Language.IfStatementAst]
+)
+
+$plop = $RawAstDocument.FindAll({$args[0].GetType() -in $a})
+
+foreach ( $item in $plop ) {
+    switch ( $item ) {
+        { $psitem -is [System.Management.Automation.Language.LoopStatementAst] } { 
+            $psitem | select @{l='Type';e={"Foreach"}},@{l='statement';e={"Foreach( "+ $psitem.Variable.extent.Text +" in " + $psitem.Condition.extent.Text + " )" }},@{l='start';e={$item.extent.StartOffset}},@{l='End';e={$item.extent.EndOffset}}
+        }
+
+        { $psitem -is [System.Management.Automation.Language.IfStatementAst] } {
+
+            If ( $psitem.Clauses.Count -ge 1 ) {
+                
+                for( $i=0; $i -lt $psitem.Clauses.Count ; $i++ ) {
+                    if ( $i -eq 0 ) {
+                        $psitem.Clauses[$i] | select @{l='Type';e={"If"}},@{l='statement';e={$_.item1.Extent.Text}},@{l='start';e={$_.Item2.extent.StartOffset}},@{l='End';e={$_.Item2.extent.EndOffset}}
+                    } else {
+                        $psitem.Clauses[$i] | select @{l='Type';e={"ElseIf"}},@{l='statement';e={$_.item1.Extent.Text}},@{l='start';e={$_.Item2.extent.StartOffset}},@{l='End';e={$_.Item2.extent.EndOffset}}
+                    }
+                }
+            }
+
+            If ( $null -ne $psitem.ElseClause ) {
+                $psitem | select @{l='Type';e={"Else"}},@{l='statement';e={}},@{l='start';e={$_.ElseClause.extent.StartOffset}},@{l='End';e={$_.ElseClause.extent.EndOffset}}
+            }
+
+        }
+    }
+}
