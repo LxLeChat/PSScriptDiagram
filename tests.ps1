@@ -51,10 +51,11 @@ $b = @(
 
 $plop = $RawAstDocument.FindAll({$args[0].GetType() -in $a})
 
+$array = @()
 foreach ( $item in $plop ) {
     switch ( $item ) {
         { $psitem -is [System.Management.Automation.Language.LoopStatementAst] } { 
-            $psitem | select @{l='Type';e={"Foreach"}},@{l='statement';e={"Foreach( "+ $psitem.Variable.extent.Text +" in " + $psitem.Condition.extent.Text + " )" }},@{l='start';e={$item.extent.StartOffset}},@{l='End';e={$item.extent.EndOffset}}
+            $array += $psitem | select @{l='Type';e={"Foreach"}},@{l='statement';e={"Foreach( "+ $psitem.Variable.extent.Text +" in " + $psitem.Condition.extent.Text + " )" }},@{l='start';e={$item.extent.StartOffset}},@{l='End';e={$item.extent.EndOffset}},@{l='description';e={}}
         }
 
         { $psitem -is [System.Management.Automation.Language.IfStatementAst] } {
@@ -63,17 +64,28 @@ foreach ( $item in $plop ) {
                 
                 for( $i=0; $i -lt $psitem.Clauses.Count ; $i++ ) {
                     if ( $i -eq 0 ) {
-                        $psitem.Clauses[$i] | select @{l='Type';e={"If"}},@{l='statement';e={$_.item1.Extent.Text}},@{l='start';e={$_.Item2.extent.StartOffset}},@{l='End';e={$_.Item2.extent.EndOffset}}
+                        $array += $psitem.Clauses[$i] | select @{l='Type';e={"If"}},@{l='statement';e={$_.item1.Extent.Text}},@{l='start';e={$_.Item2.extent.StartOffset}},@{l='End';e={$_.Item2.extent.EndOffset}},@{l='description';e={}}
                     } else {
-                        $psitem.Clauses[$i] | select @{l='Type';e={"ElseIf"}},@{l='statement';e={$_.item1.Extent.Text}},@{l='start';e={$_.Item2.extent.StartOffset}},@{l='End';e={$_.Item2.extent.EndOffset}}
+                        $array +=  $psitem.Clauses[$i] | select @{l='Type';e={"ElseIf"}},@{l='statement';e={$_.item1.Extent.Text}},@{l='start';e={$_.Item2.extent.StartOffset}},@{l='End';e={$_.Item2.extent.EndOffset}},@{l='description';e={}}
                     }
                 }
             }
 
             If ( $null -ne $psitem.ElseClause ) {
-                $psitem | select @{l='Type';e={"Else"}},@{l='statement';e={}},@{l='start';e={$_.ElseClause.extent.StartOffset}},@{l='End';e={$_.ElseClause.extent.EndOffset}}
+                $array +=  $psitem | select @{l='Type';e={"Else"}},@{l='statement';e={}},@{l='start';e={$_.ElseClause.extent.StartOffset}},@{l='End';e={$_.ElseClause.extent.EndOffset}},@{l='description';e={}}
             }
 
         }
+    }
+}
+
+
+graph depencies @{rankdir='LR'}{
+    Foreach ( $t in $array ) {
+        if ( $t.type -eq 'if') {
+            node -Name $t.description
+        }
+        
+        node -Name $t.name -Attributes @{Color='green'}
     }
 }
