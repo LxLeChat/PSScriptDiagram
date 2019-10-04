@@ -1,4 +1,4 @@
-$path = "C:\Users\Lx\GitPerso\PSScriptDiagram\sample.ps1"
+$path = "C:\temp\ast.ps1"
 $ParsedFile     = [System.Management.Automation.Language.Parser]::ParseFile($path, [ref]$null, [ref]$Null)
 $RawAstDocument = $ParsedFile.FindAll({$args[0] -is [System.Management.Automation.Language.Ast]}, $true)
 
@@ -60,20 +60,7 @@ foreach ( $item in $plop ) {
 
         { $psitem -is [System.Management.Automation.Language.IfStatementAst] } {
 
-            If ( $psitem.Clauses.Count -ge 1 ) {
-                
-                for( $i=0; $i -lt $psitem.Clauses.Count ; $i++ ) {
-                    if ( $i -eq 0 ) {
-                        $array += $psitem.Clauses[$i] | select @{l='Type';e={"If"}},@{l='statement';e={$_.item1.Extent.Text}},@{l='start';e={$_.Item2.extent.StartOffset}},@{l='End';e={$_.Item2.extent.EndOffset}},@{l='description';e={}}
-                    } else {
-                        $array +=  $psitem.Clauses[$i] | select @{l='Type';e={"ElseIf"}},@{l='statement';e={$_.item1.Extent.Text}},@{l='start';e={$_.Item2.extent.StartOffset}},@{l='End';e={$_.Item2.extent.EndOffset}},@{l='description';e={}}
-                    }
-                }
-            }
-
-            If ( $null -ne $psitem.ElseClause ) {
-                $array +=  $psitem | select @{l='Type';e={"Else"}},@{l='statement';e={}},@{l='start';e={$_.ElseClause.extent.StartOffset}},@{l='End';e={$_.ElseClause.extent.EndOffset}},@{l='description';e={}}
-            }
+            
 
         }
     }
@@ -87,5 +74,75 @@ graph depencies @{rankdir='LR'}{
         }
         
         node -Name $t.name -Attributes @{Color='green'}
+    }
+}
+
+class node {
+    [string]$Type
+    [string]$Statement
+    [int]$OffsetStart
+    [int]$OffsetEnd
+    [String]$Description
+    $Children = [System.Collections.Generic.List[node]]::new()
+
+    node () {
+
+    }
+}
+
+Class IfNode : node {
+    
+    [string]$Type = "If"
+
+    IfNode ([System.Management.Automation.Language.Ast]$e) {
+        
+        If ( $e.Clauses.Count -ge 1 ) {
+            for( $i=0; $i -lt $e.Clauses.Count ; $i++ ) {
+                if ( $i -eq 0 ) {
+                    $this.Statement = $e.Clauses[$i].Item1.Extent.Text
+                    $this.OffsetStart = $e.Clauses[$i].Item2.extent.StartOffset
+                    $this.OffsetEnd = $e.Clauses[$i].Item2.extent.EndOffset
+                } else {
+                    $this.Children.Add([ElseIfNode]::new($e.clauses[$i]))
+                }
+            }
+        }
+
+        If ( $null -ne $e.ElseClause ) {
+            $this.Children.Add([ElseNode]::new($e.ElseClause))
+        }
+    }
+}
+
+Class ElseNode : node {
+    [String]$Type = "Else"
+
+    ElseNode ([System.Management.Automation.Language.Ast]$e) {
+        #$array +=  $psitem | select @{l='Type';e={"Else"}},@{l='statement';e={}},@{l='start';e={$_.ElseClause.extent.StartOffset}},@{l='End';e={$_.ElseClause.extent.EndOffset}},@{l='description';e={}}
+        $this.Statement = $null
+        $this.OffsetStart = $e.extent.StartOffset
+        $this.OffsetEnd = $e.extent.EndOffset
+    }
+}
+
+Class ElseIfNode : node {
+    [String]$Type = "ElseIf"
+
+    ElseIfNode ([System.Management.Automation.Language.Ast]$e) {
+        $this.Statement = $e.item1.Extent.Text
+        $this.OffsetStart = $e.Item2.extent.StartOffset
+        $this.OffsetEnd = $e.Item2.extent.EndOffset
+    }
+}
+
+$a= [ifnode]::new($plop[0])
+
+
+
+
+Class ForeachNode : node {
+
+    ForeachNode ([System.Management.Automation.Language.Ast]$e) {
+        
     }
 }
