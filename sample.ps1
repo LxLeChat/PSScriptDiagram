@@ -9,9 +9,13 @@ if ($snapin -eq $null)
 if ( $truc ) {
     "clop"
 } elseif ( $caca ) {
-    "burpe"
+    foreach( $plop in $stuff) { "zazaz"}
 } else {
     "bahahah"
+}
+
+$a = {
+    if ( $PROUT ) {}
 }
 
 # This code creates a document library in a SharePoint 2013 team site and activate versioning and update title
