@@ -24,26 +24,18 @@ $b = @(
 
 ##########################
 
-$path = "C:\users\lx\gitperso\PSScriptDiagram\sample.ps1"
-$ParsedFile     = [System.Management.Automation.Language.Parser]::ParseFile($path, [ref]$null, [ref]$Null)
-$RawAstDocument = $ParsedFile.FindAll({$args[0] -is [System.Management.Automation.Language.Ast]}, $false)
-
-
-$x=$RawAstDocument | %{if ( $null -eq $_.parent.parent.parent ) { $t = [nodeutility]::SetNode($_); if ( $null -ne  $t) { $t} } }
-
-
 class nodeutility {
 
     [node] static SetNode ([object]$e) {
         $node = $null
         Switch ( $e ) {
             { $psitem -is [System.Management.Automation.Language.IfStatementAst] }      { $node = [IfNode]::new($PSItem) }
-            { $psitem -is [System.Management.Automation.Language.SwitchStatementAst] }  { $node = [Node]::new($PSItem) }
             { $psitem -is [System.Management.Automation.Language.ForEachStatementAst] } { $node = [ForeachNode]::new($PSItem) }
-            { $psitem -is [System.Management.Automation.Language.ForStatementAst] }     { $node = [Node]::new($PSItem) }
-            { $psitem -is [System.Management.Automation.Language.DoUntilStatementAst] } { $node = [Node]::new($PSItem) }
-            { $psitem -is [System.Management.Automation.Language.DoWhileStatementAst] } { $node = [Node]::new($PSItem) }
             { $psitem -is  [System.Management.Automation.Language.WhileStatementAst] }  { $node = [WhileNode]::new($PSItem) }
+            #{ $psitem -is [System.Management.Automation.Language.SwitchStatementAst] }  { $node = [Node]::new($PSItem) }
+            #{ $psitem -is [System.Management.Automation.Language.ForStatementAst] }     { $node = [Node]::new($PSItem) }
+            #{ $psitem -is [System.Management.Automation.Language.DoUntilStatementAst] } { $node = [Node]::new($PSItem) }
+            #{ $psitem -is [System.Management.Automation.Language.DoWhileStatementAst] } { $node = [Node]::new($PSItem) }
             
         }
         return $node
@@ -170,3 +162,14 @@ Class WhileNode : node {
         $this.FindChildren($this.raw.Body.Statements)
     }
 }
+
+
+## Working example
+
+$path = "C:\users\lx\gitperso\PSScriptDiagram\sample.ps1"
+$ParsedFile     = [System.Management.Automation.Language.Parser]::ParseFile($path, [ref]$null, [ref]$Null)
+$RawAstDocument = $ParsedFile.FindAll({$args[0] -is [System.Management.Automation.Language.Ast]}, $false)
+
+
+$x=$RawAstDocument | %{if ( $null -eq $_.parent.parent.parent ) { $t = [nodeutility]::SetNode($_); if ( $null -ne  $t) { $t} } }
+$x
