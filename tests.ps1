@@ -1,4 +1,4 @@
-## determiner des icones par type d'objet
+<## determiner des icones par type d'objet
 ## essayer de faire un deroulement simple dans un premier temps
 ## moi ce que je vois:
 ## 1° temps: essayer de créer un tableau de ces objets dans une premiere phase du script
@@ -22,7 +22,7 @@ $b = @(
     [System.Management.Automation.Language.IfStatementAst]
 )
 
-##########################
+##########################>
 
 class nodeutility {
 
