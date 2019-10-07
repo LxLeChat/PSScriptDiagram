@@ -1,5 +1,13 @@
 # check to ensure Microsoft.SharePoint.PowerShell is loaded if not using the SharePoint Management Shell 
 $snapin = Get-PSSnapin | Where-Object {$_.Name -eq 'Microsoft.SharePoint.Powershell'} 
+
+
+while ($i -lt 10 ) {
+    "ahahah"
+    if ( $kokokok -eq "aaa" ) { foreach($a in $azeaze) {"kkkkk"}}
+}
+
+
 if ($snapin -eq $null) 
 {    
 	Write-Host "Loading SharePoint Powershell Snapin"    
@@ -10,8 +18,11 @@ if ( $truc ) {
     "clop"
 } elseif ( $caca ) {
     foreach( $plop in $stuff) { "zazaz"}
+    foreach( $a in $b) { if ($x) {"b"}}
 } else {
     "bahahah"
+    foreach($z in $y) {$z}
+    if ($true) {"a"}
 }
 
 $a = {
@@ -68,3 +79,15 @@ foreach ($lib in $libraries)
 }
 
 $web.Dispose()
+
+if ( $stuff ) {
+    foreach ( $plop in $blalal ) {
+        "w"
+    }
+}
+
+foreach ( $a in $b ) {
+    if ( $i ) {
+        "zzzz"
+    }
+}

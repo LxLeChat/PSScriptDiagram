@@ -1,29 +1,3 @@
-$path = "C:\temp\ast.ps1"
-
-
-##Les IFS
-$Ifs = $RawASTDocument.FindAll({$args[0] -is [System.Management.Automation.Language.IfStatementAst]})
-
-## retourne les clauses des ifs
-$ifs.Clauses
-
-## retourne le contenu de la clause
-$ifs.Clauses.Item1
-
-## retourne le else
-$Ifs.ElseClause
-
-## liste des choses à remonter, evidemment il faudrait du recurisf dans chacun de ces élements
-## pour trouver tous ces types...
-[System.Management.Automation.Language.IfStatementAst]
-[System.Management.Automation.Language.SwitchStatementAst]
-[System.Management.Automation.Language.ForEachStatementAst]
-[System.Management.Automation.Language.ForStatementAst]
-[System.Management.Automation.Language.DoUntilStatementAst]
-[System.Management.Automation.Language.DoWhileStatementAst]
-[System.Management.Automation.Language.WhileStatementAst]
-# pipelineast pour les foreach-object/where-object
-
 ## determiner des icones par type d'objet
 ## essayer de faire un deroulement simple dans un premier temps
 ## moi ce que je vois:
@@ -48,26 +22,6 @@ $b = @(
     [System.Management.Automation.Language.IfStatementAst]
 )
 
-$plop = $RawAstDocument.FindAll({$args[0].GetType() -in $a})
-$RawAstDocument.Find({$args[0].GetType() -in $a})
-$b= [ifnode]::new($plop[0])
-
-$array = @()
-foreach ( $item in $plop ) {
-    switch ( $item ) {
-        { $psitem -is [System.Management.Automation.Language.LoopStatementAst] } { 
-            
-        }
-
-        { $psitem -is [System.Management.Automation.Language.IfStatementAst] } {
-
-            
-
-        }
-    }
-}
-
-
 ##########################
 
 $path = "C:\users\lx\gitperso\PSScriptDiagram\sample.ps1"
@@ -89,10 +43,17 @@ class nodeutility {
             { $psitem -is [System.Management.Automation.Language.ForStatementAst] }     { $node = [Node]::new($PSItem) }
             { $psitem -is [System.Management.Automation.Language.DoUntilStatementAst] } { $node = [Node]::new($PSItem) }
             { $psitem -is [System.Management.Automation.Language.DoWhileStatementAst] } { $node = [Node]::new($PSItem) }
-            { $psitem -is  [System.Management.Automation.Language.WhileStatementAst] }  { $node = [Node]::new($PSItem) }
+            { $psitem -is  [System.Management.Automation.Language.WhileStatementAst] }  { $node = [WhileNode]::new($PSItem) }
             
         }
         return $node
+    }
+
+    [object[]] static GetASTitems () {
+        return @(
+            [System.Management.Automation.Language.ForEachStatementAst],
+            [System.Management.Automation.Language.IfStatementAst]
+        )
     }
 }
 
@@ -109,13 +70,21 @@ class node {
         
     }
 
-    [void]FindChildren ([System.Management.Automation.Language.Ast]$e) {
-        Foreach ( $a in $e.FindAll({$args[0] -is [System.Management.Automation.Language.Ast]},$false) ) {
-            $t = [nodeutility]::SetNode($a)
-            if ( $null -ne  $t ) { $this.Children.Add( $t ) } 
+    
+    [void]FindChildren ([System.Management.Automation.Language.Ast[]]$e) {
+        foreach ( $d in $e ) {
+            #write-host "ok..."
+            If ( $d.GetType() -in [nodeutility]::GetASTitems() ) {
+                #Write-Host "plop"
+                $this.Children.add([nodeutility]::SetNode($d))
+            }
         }
     }
 
+    [node[]] GetChildren () {
+        return $this.Children
+    }
+    
 }
 
 Class IfNode : node {
@@ -141,7 +110,11 @@ Class IfNode : node {
         }
 
         $this.raw = $e
+
+        $this.FindChildren($this.raw.Clauses[0].Item2.Statements)
+
     }
+
 }
 
 Class ElseNode : node {
@@ -151,6 +124,8 @@ Class ElseNode : node {
         $this.Statement = "Else From {0}" -f $d
         $this.OffsetStart = $e.extent.StartOffset
         $this.OffsetEnd = $e.extent.EndOffset
+        $this.raw = $e
+        $this.FindChildren($this.raw.statements)
     }
 }
 
@@ -161,7 +136,11 @@ Class ElseIfNode : node {
         $this.Statement = "ElseIf ( {0} ) From {1}" -f $e.Extent.Text,$d
         $this.OffsetStart = $e.extent.StartOffset
         $this.OffsetEnd = $e.extent.EndOffset
-        #$this.FindChildren($f)
+        $this.raw = $e
+
+        #$ast = $this.raw.Parent.Clauses.where({$_.item1.extent.text -eq $this.raw.extent.text}).item2.Statements
+
+        $this.FindChildren($this.raw.Parent.Clauses.where({$_.item1.extent.text -eq $this.raw.extent.text}).item2.Statements)
     }
 
 }
@@ -173,37 +152,21 @@ Class ForeachNode : node {
         $this.Statement = "Foreach( "+ $e.Variable.extent.Text +" in " + $e.Condition.extent.Text + " )"
         $this.OffsetStart = $e.extent.StartOffset
         $this.OffsetEnd = $e.extent.EndOffset
-        #$this.FindChildren($e)
+        $this.raw = $e
+
+        $this.FindChildren($this.raw.Body.Statements)
     }
 }
 
+Class WhileNode : node {
+    [string]$Type = "While"
 
+    WhileNode ([System.Management.Automation.Language.Ast]$e) {
+        $this.Statement = "While( "+ $e.Condition.extent.Text + " )"
+        $this.OffsetStart = $e.extent.StartOffset
+        $this.OffsetEnd = $e.extent.EndOffset
+        $this.raw = $e
 
-
-
-$path = "C:\users\lx\gitperso\PSScriptDiagram\yo.ps1"
-$tokenlist = $null
-$ParsedFile     = [System.Management.Automation.Language.Parser]::ParseFile($path, [ref]$null, [ref]$Null)
-$RawAstDocument = $ParsedFile.FindAll({$args[0] -is [System.Management.Automation.Language.Ast]}, $false)
-
-$b = @(
-    [System.Management.Automation.Language.ForEachStatementAst],
-    [System.Management.Automation.Language.IfStatementAst]
-)
-
-$plop = $RawAstDocument.FindAll({$args[0].GetType() -in $b})
-
-$RawAstDocument = $ParsedFile.FindAll({$args[0] -is $b}, $false)
-
-
-
-
-graph depencies @{rankdir='LR'}{
-    Foreach ( $t in $array ) {
-        if ( $t.type -eq 'if') {
-            node -Name $t.description
-        }
-        
-        node -Name $t.name -Attributes @{Color='green'}
+        $this.FindChildren($this.raw.Body.Statements)
     }
 }
