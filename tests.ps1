@@ -1,26 +1,4 @@
-<## determiner des icones par type d'objet
-## essayer de faire un deroulement simple dans un premier temps
-## moi ce que je vois:
-## 1° temps: essayer de créer un tableau de ces objets dans une premiere phase du script
-## 2° temps: pour chaque objet ajotuer une description
-## 3° temps: grapher dans l ordre, en mettant la description dans l objets (objet du graph)
 
-## stephane
-## se baser sur des commentaires spéciaux ?
-
-
-$a = @([System.Management.Automation.Language.IfStatementAst],
-[System.Management.Automation.Language.SwitchStatementAst],
-[System.Management.Automation.Language.ForEachStatementAst],
-[System.Management.Automation.Language.ForStatementAst],
-[System.Management.Automation.Language.DoUntilStatementAst],
-[System.Management.Automation.Language.DoWhileStatementAst],
-[System.Management.Automation.Language.WhileStatementAst])
-
-$b = @(
-    [System.Management.Automation.Language.ForEachStatementAst],
-    [System.Management.Automation.Language.IfStatementAst]
-)
 
 ##########################>
 
