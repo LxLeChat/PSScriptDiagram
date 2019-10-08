@@ -1,9 +1,32 @@
 # check to ensure Microsoft.SharePoint.PowerShell is loaded if not using the SharePoint Management Shell 
 $snapin = Get-PSSnapin | Where-Object {$_.Name -eq 'Microsoft.SharePoint.Powershell'} 
+
+
+while ($i -lt 10 ) {
+    "ahahah"
+    if ( $kokokok -eq "aaa" ) { foreach($a in $azeaze) {"kkkkk"}}
+}
+
+
 if ($snapin -eq $null) 
 {    
 	Write-Host "Loading SharePoint Powershell Snapin"    
 	Add-PSSnapin "Microsoft.SharePoint.Powershell" 
+} else { "plop" }
+
+if ( $truc ) {
+    "clop"
+} elseif ( $caca ) {
+    foreach( $plop in $stuff) { "zazaz"}
+    foreach( $a in $b) { if ($x) {"b"}}
+} else {
+    "bahahah"
+    foreach($z in $y) {$z}
+    if ($true) {"a"}
+}
+
+$a = {
+    if ( $PROUT ) {}
 }
 
 # This code creates a document library in a SharePoint 2013 team site and activate versioning and update title
@@ -30,11 +53,12 @@ foreach ($lib in $libraries)
     $list.EnableMinorVersions = $true;
     $list.ForceCheckout = $true;
     #Check if the list has enterprise column already
-    #if ($list.Fields.ContainsField("Mots clés d’entreprise") -eq $false) # the site was in french so I needed to reference the library by its french DisplayName
-    #{
+    if ($list.Fields.ContainsField("Mots clés d’entreprise") -eq $false) # the site was in french so I needed to reference the library by its french DisplayName
+    {
         #Add Enterprise keywords column to list
     #    $list.Fields.Add($list.ParentWeb.AvailableFields["Mots clés d’entreprise"])
-    #}
+        "beuhaaaaaa"
+    }
 
     $list.Update()
     
@@ -55,3 +79,15 @@ foreach ($lib in $libraries)
 }
 
 $web.Dispose()
+
+if ( $stuff ) {
+    foreach ( $plop in $blalal ) {
+        "w"
+    }
+}
+
+foreach ( $a in $b ) {
+    if ( $i ) {
+        "zzzz"
+    }
+}
