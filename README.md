@@ -5,6 +5,9 @@ l idée est de récupe tous les if/where/foreach etc... et à chaque fois qu'on 
 ![plop](classes.png)
 
 
+# A regler
+Si on a un script "avancé", propre en somme .. avec des blocs ça chie ... donc  faut trouver un moyen, et encore pire si y a des blocs begin/process etc... limite on pourrait appliquer ça à des fonctions aussi .. !  en tout cas y a une base !
+
 ```powershell
 #Method qui set la description, lorsqu'un format de commentaire special est utilisé
 # le format étant le suivant
