@@ -6,12 +6,25 @@ l idée est de récupe tous les if/where/foreach etc... et à chaque fois qu'on 
 
 
 ```powershell
-## trouver les comments dans un script block précis, il faut utiliser la tokenization:
-## imaginons qu'on cherche un comment de type : #--DiagramDescription: ceci est un IF!
-## on recupère le text du 1° if, par exemple
-$z=$x[0].raw.Clauses[0].Item2.Extent.Text
-$tokens=@()
-[System.Management.Automation.Language.Parser]::ParseInput($z,[ref]$tokens,[ref]$null)
-$c = $tokens | where kind -eq "comment"
-## on recup le premier parce que il faut qu'il soit en dessous du if. pseudo règle ... !
+#Method qui set la description, lorsqu'un format de commentaire special est utilisé
+# le format étant le suivant
+<#
+    DiagramDescription: Blalalalala
+#>
+
+#ce commentaire doit être le premier commentaire qui apparait dans le corps du noeud
+
+## a mettre dans la classe node, et faire les différents cas pour les différents type de node
+SetDescription () {
+        $tokens=@()
+        
+        Switch ( $this.Type ) {
+            "If" { [System.Management.Automation.Language.Parser]::ParseInput($this.raw.Clauses[0].Item2.Extent.Text,[ref]$tokens,[ref]$null) }
+        }
+        
+        $c = $tokens | Where-Object kind -eq "comment"
+        If ( $c.count -gt 0 ) {
+            If ( $c[0].text -match '\<#\r\s+DiagramDescription:(?<description> .+)\r\s+#\>' ) { $this.Description = $Matches.description.Trim() }
+        }
+    }
 ```
