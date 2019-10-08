@@ -29,6 +29,30 @@ $a = {
     if ( $PROUT ) {}
 }
 
+switch ( $a ) {
+    1 { if ($true) {"blop"} }
+    2 { 2 }
+    default { "bla" }
+}
+
+while ($i -lt 10) {
+    If ( $i -eq 5) { "plop"}
+}
+
+do {
+    If ( $i -eq 5) { "plop"}
+} while ($i -eq 10)
+
+do {
+    If ( $i -eq 5) { "ahahaha"}
+} until ($i -eq 10)
+
+for ( $i=0;$i -lt 10;$i++) {
+
+    If ( $i -eq 5) { "ahahaha"}
+
+}
+
 # This code creates a document library in a SharePoint 2013 team site and activate versioning and update title
 # Updating the Title field is tricky and you have to use the Culture object to complete the task. We finally adds a link to the library
 # on the left navigation.

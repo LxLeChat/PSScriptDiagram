@@ -7,13 +7,13 @@ class nodeutility {
     [node] static SetNode ([object]$e) {
         $node = $null
         Switch ( $e ) {
-            { $psitem -is [System.Management.Automation.Language.IfStatementAst] }      { $node = [IfNode]::new($PSItem) }
+            { $psitem -is [System.Management.Automation.Language.IfStatementAst]      } { $node = [IfNode]::new($PSItem)      }
             { $psitem -is [System.Management.Automation.Language.ForEachStatementAst] } { $node = [ForeachNode]::new($PSItem) }
-            { $psitem -is  [System.Management.Automation.Language.WhileStatementAst] }  { $node = [WhileNode]::new($PSItem) }
-            #{ $psitem -is [System.Management.Automation.Language.SwitchStatementAst] }  { $node = [Node]::new($PSItem) }
-            #{ $psitem -is [System.Management.Automation.Language.ForStatementAst] }     { $node = [Node]::new($PSItem) }
-            #{ $psitem -is [System.Management.Automation.Language.DoUntilStatementAst] } { $node = [Node]::new($PSItem) }
-            #{ $psitem -is [System.Management.Automation.Language.DoWhileStatementAst] } { $node = [Node]::new($PSItem) }
+            { $psitem -is [System.Management.Automation.Language.WhileStatementAst]   } { $node = [WhileNode]::new($PSItem)   }
+            { $psitem -is [System.Management.Automation.Language.SwitchStatementAst]  } { $node = [SwitchNode]::new($PSItem) }
+            { $psitem -is [System.Management.Automation.Language.ForStatementAst]     } { $node = [ForNode]::new($PSItem)     }
+            { $psitem -is [System.Management.Automation.Language.DoUntilStatementAst] } { $node = [DoUntilNode]::new($PSItem) }
+            { $psitem -is [System.Management.Automation.Language.DoWhileStatementAst] } { $node = [DoWhileNode]::new($PSItem) }
             
         }
         return $node
@@ -115,11 +115,39 @@ Class ElseIfNode : node {
 
 }
 
+Class SwitchNode : node {
+    [String]$Type = "Switch"
+
+    SwitchNode ([System.Management.Automation.Language.Ast]$e) {
+        $this.Statement = "Switch ( "+ $e.Condition.extent.Text + " )"
+        $this.OffsetStart = $e.extent.StartOffset
+        $this.OffsetEnd = $e.extent.EndOffset
+        $this.raw = $e
+
+        for( $i=0; $i -lt $e.Clauses.Count ; $i++ ) {
+            $this.Children.Add([SwitchCaseNode]::new($e.clauses[$i].Item1,$this.Statement,$e.clauses[$i].Item2))
+        }
+
+    }
+}
+
+Class SwitchCaseNode : node {
+    [String]$Type = "SwitchCase"
+
+    SwitchCaseNode ([System.Management.Automation.Language.Ast]$e,[string]$d,[System.Management.Automation.Language.Ast]$f) {
+        $this.OffsetStart = $e.extent.StartOffset
+        $this.OffsetEnd = $e.extent.EndOffset
+        $this.raw = $e
+        $this.FindChildren($f.statements)
+        $this.Statement = "Case: {1} for Switch {0}" -f $d,$this.raw.Extent.Text
+    }
+}
+
 Class ForeachNode : node {
     [String]$Type = "Foreach"
 
     ForeachNode ([System.Management.Automation.Language.Ast]$e) {
-        $this.Statement = "Foreach( "+ $e.Variable.extent.Text +" in " + $e.Condition.extent.Text + " )"
+        $this.Statement = "Foreach ( "+ $e.Variable.extent.Text +" in " + $e.Condition.extent.Text + " )"
         $this.OffsetStart = $e.extent.StartOffset
         $this.OffsetEnd = $e.extent.EndOffset
         $this.raw = $e
@@ -132,12 +160,51 @@ Class WhileNode : node {
     [string]$Type = "While"
 
     WhileNode ([System.Management.Automation.Language.Ast]$e) {
-        $this.Statement = "While( "+ $e.Condition.extent.Text + " )"
+        $this.Statement = "While ( "+ $e.Condition.extent.Text + " )"
         $this.OffsetStart = $e.extent.StartOffset
         $this.OffsetEnd = $e.extent.EndOffset
         $this.raw = $e
 
         $this.FindChildren($this.raw.Body.Statements)
+    }
+}
+
+Class ForNode : node {
+    [string]$Type = "For"
+
+    ForNode ([System.Management.Automation.Language.Ast]$e) {
+        $this.Statement = "For ( "+ $e.Condition.extent.Text + " )"
+        $this.OffsetStart = $e.extent.StartOffset
+        $this.OffsetEnd = $e.extent.EndOffset
+        $this.raw = $e
+
+       $this.FindChildren($this.raw.Body.Statements)
+    }
+}
+
+Class DoUntilNode : node {
+    [string]$Type = "DoUntil"
+
+    DoUntilNode ([System.Management.Automation.Language.Ast]$e) {
+        $this.Statement = "Do Until ( "+ $e.Condition.extent.Text + " )"
+        $this.OffsetStart = $e.extent.StartOffset
+        $this.OffsetEnd = $e.extent.EndOffset
+        $this.raw = $e
+
+       $this.FindChildren($this.raw.Body.Statements)
+    }
+}
+
+Class DoWhileNode : node {
+    [string]$Type = "DoWhile"
+
+    DoWhileNode ([System.Management.Automation.Language.Ast]$e) {
+        $this.Statement = "Do While ( "+ $e.Condition.extent.Text + " )"
+        $this.OffsetStart = $e.extent.StartOffset
+        $this.OffsetEnd = $e.extent.EndOffset
+        $this.raw = $e
+
+       $this.FindChildren($this.raw.Body.Statements)
     }
 }
 
