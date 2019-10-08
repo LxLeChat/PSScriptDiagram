@@ -6,7 +6,8 @@ l idée est de récupe tous les if/where/foreach etc... et à chaque fois qu'on 
 
 
 # A regler
-Si on a un script "avancé", propre en somme .. avec des blocs ça chie ... donc  faut trouver un moyen, et encore pire si y a des blocs begin/process etc... limite on pourrait appliquer ça à des fonctions aussi .. !  en tout cas y a une base !
+- Si on a un script "avancé", propre en somme .. avec des blocs ça chie ... donc  faut trouver un moyen, et encore pire si y a des blocs begin/process etc... limite on pourrait appliquer ça à des fonctions aussi .. !  en tout cas y a une base !
+- pour des scripts "lambda" ça à l air de fonctionner correctement...
 
 ```powershell
 #Method qui set la description, lorsqu'un format de commentaire special est utilisé
