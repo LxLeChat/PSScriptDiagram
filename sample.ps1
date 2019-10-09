@@ -4,12 +4,20 @@ $snapin = Get-PSSnapin | Where-Object {$_.Name -eq 'Microsoft.SharePoint.Powersh
 
 while ($i -lt 10 ) {
     "ahahah"
-    if ( $kokokok -eq "aaa" ) { foreach($a in $azeaze) {"kkkkk"}}
+    if ( $kokokok -eq "aaa" ) {
+        <#
+        DiagramDescription: une description d un autre if
+    #>
+        foreach($a in $azeaze) {"kkkkk"}
+    }
 }
 
 
 if ($snapin -eq $null) 
-{    
+{
+    <#
+        DiagramDescription: If numero 2
+    #> 
 	Write-Host "Loading SharePoint Powershell Snapin"    
 	Add-PSSnapin "Microsoft.SharePoint.Powershell" 
 } else { "plop" }
@@ -44,7 +52,9 @@ do {
 } while ($i -eq 10)
 
 do {
-    If ( $i -eq 5) { "ahahaha"}
+    If ( $i -eq 5) {
+        
+        "ahahaha"}
 } until ($i -eq 10)
 
 for ( $i=0;$i -lt 10;$i++) {
@@ -69,7 +79,7 @@ $ql = $web.Navigation.QuickLaunch;
 
 foreach ($lib in $libraries)
 {
-   
+   while ( $i -lt 10) {"a"}
     $newlistID = $web.Lists.Add($lib[0],"",$listTemplate);
     $list = $web.Lists[$newlistID];
     #$list.Update() 
@@ -105,6 +115,9 @@ foreach ($lib in $libraries)
 $web.Dispose()
 
 if ( $stuff ) {
+    <#
+        DiagramDescription: ceci est un if!
+    #>
     foreach ( $plop in $blalal ) {
         "w"
     }

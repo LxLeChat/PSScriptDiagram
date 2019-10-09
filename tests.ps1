@@ -57,6 +57,19 @@ class node {
     [node[]] GetChildren () {
         return $this.Children
     }
+
+    SetDescription () {
+        $tokens=@()
+        Switch ( $this.Type ) {
+            "If" { [System.Management.Automation.Language.Parser]::ParseInput($this.raw.Clauses[0].Item2.Extent.Text,[ref]$tokens,[ref]$null) }
+            ## Need to be populated
+        }
+        
+        $c = $tokens | Where-Object kind -eq "comment"
+        If ( $c.count -gt 0 ) {
+            If ( $c[0].text -match '\<#\r\s+DiagramDescription:(?<description> .+)\r\s+#\>' ) { $this.Description = $Matches.description.Trim() }
+        }
+    }
     
 }
 
@@ -85,6 +98,8 @@ Class IfNode : node {
         $this.raw = $e
 
         $this.FindChildren($this.raw.Clauses[0].Item2.Statements)
+
+        $this.SetDescription()
 
     }
 

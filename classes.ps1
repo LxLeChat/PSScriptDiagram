@@ -42,12 +42,9 @@ class node {
         
     }
 
-    
     [void]FindChildren ([System.Management.Automation.Language.Ast[]]$e) {
         foreach ( $d in $e ) {
-            #write-host "ok..."
             If ( $d.GetType() -in [nodeutility]::GetASTitems() ) {
-                #Write-Host "plop"
                 $this.Children.add([nodeutility]::SetNode($d))
             }
         }
@@ -55,6 +52,26 @@ class node {
 
     [node[]] GetChildren () {
         return $this.Children
+    }
+
+    SetDescription () {
+        ## description should be a bloc comment, and should be the first comment inside the node.. not the second, not placed before!:
+        ## it should look like this:
+        ## <#
+        ##     DiagramDescription: Give a bried description
+        ## #>
+        ## 
+
+        $tokens=@()
+        Switch ( $this.Type ) {
+            "If" { [System.Management.Automation.Language.Parser]::ParseInput($this.raw.Clauses[0].Item2.Extent.Text,[ref]$tokens,[ref]$null) }
+            ## Need to be populated
+        }
+        
+        $c = $tokens | Where-Object kind -eq "comment"
+        If ( $c.count -gt 0 ) {
+            If ( $c[0].text -match '\<#\r\s+DiagramDescription:(?<description> .+)\r\s+#\>' ) { $this.Description = $Matches.description.Trim() }
+        }
     }
     
 }
