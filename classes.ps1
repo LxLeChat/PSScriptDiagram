@@ -1,5 +1,4 @@
 
-
 class nodeutility {
 
     [node] static SetNode ([object]$e) {
@@ -211,19 +210,3 @@ Class DoWhileNode : node {
     }
 }
 
-
-## Working example
-
-$path = "C:\users\lx\gitperso\PSScriptDiagram\sample.ps1"
-$ParsedFile     = [System.Management.Automation.Language.Parser]::ParseFile($path, [ref]$null, [ref]$Null)
-$RawAstDocument = $ParsedFile.FindAll({$args[0] -is [System.Management.Automation.Language.Ast]}, $false)
-
-
-$x=$RawAstDocument | %{if ( $null -eq $_.parent.parent.parent ) { $t = [nodeutility]::SetNode($_); if ( $null -ne  $t) { $t} } }
-$x
-
-graph "tes" {
-    $x | ForEach-Object { node $_.Statement ; if ( $_.Children.count ) { node $_.GetChildren().Statement }}
-    edge $x.Statement
-    $x | ForEach-Object { if ( $_.Children.count -gt 0 ) { edge -from $_.Statement -to $_.GetChildren().Statement }}
-} |Show-PSGraph
