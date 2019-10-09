@@ -4,6 +4,8 @@ l idée est de récupe tous les if/where/foreach etc... et à chaque fois qu'on 
 
 ![plop](classes.png)
 
+example of i what i want to achieve
+![plopy](example.png)
 
 # A regler
 - Si on a un script "avancé", propre en somme .. avec des blocs ça chie ... donc  faut trouver un moyen, et encore pire si y a des blocs begin/process etc... limite on pourrait appliquer ça à des fonctions aussi .. !  en tout cas y a une base !
