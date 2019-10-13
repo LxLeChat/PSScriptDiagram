@@ -383,8 +383,3 @@ $RawAstDocument = $ParsedFile.FindAll({$args[0] -is [System.Management.Automatio
 $x=$RawAstDocument | %{if ( $null -eq $_.parent.parent.parent ) { $t = [nodeutility]::SetNode($_); if ( $null -ne  $t) { $t} } }
 $x
 
-graph "tes" {
-    $x | ForEach-Object { node $_.Statement ; if ( $_.Children.count ) { node $_.GetChildren().Statement }}
-    edge $x.Statement
-    $x | ForEach-Object { if ( $_.Children.count -gt 0 ) { edge -from $_.Statement -to $_.GetChildren().Statement }}
-} |Show-PSGraph
