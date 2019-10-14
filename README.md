@@ -1,5 +1,5 @@
 ## NEED TO TRANSLATE TO ENGLISH :)
-## Reminder: it's a workin in progress !
+## Reminder: it's a work in progress !
 
 # PSScriptDiagram
 Idea: Fetching all ifs,loops etc ... to graph a diagram of an entire script (not a module...)
