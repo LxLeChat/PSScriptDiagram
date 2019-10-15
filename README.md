@@ -39,4 +39,7 @@ At line:104 char:9
 + FullyQualifiedErrorId : ArgumentOutOfRangeException
 
 ```
+-Create ``writeback`` method, to update script file... in ``nodeutility`` class ? this should be recursif...
+-Make sure the ``statement`` property alwas reference the parent. Or is it really necessary ?
+-If you dont want to put a description, maybe graph nodes text should contain ``statement`` 
 -Start Graph based on description
