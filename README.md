@@ -9,30 +9,34 @@ Idea: Fetching all ifs,loops etc ... to graph a diagram of an entire script (not
 example of i what i want to achieve
 ![plopy](example.png)
 
-# A regler
-- Si on a un script "avancé", propre en somme .. avec des blocs ça chie ... donc  faut trouver un moyen, et encore pire si y a des blocs begin/process etc... limite on pourrait appliquer ça à des fonctions aussi .. !  en tout cas y a une base !
-- pour des scripts "lambda" ça à l air de fonctionner correctement...
-
+# ToDO
+-Fix SetDescription() method for elseifnode (maybe others ??). To test: run test.ps1, on a ``elseifnode`` the ``setdescription`` should fail..
 ```powershell
-#Method qui set la description, lorsqu'un format de commentaire special est utilisé
-# le format étant le suivant
-<#
-    DiagramDescription: Blalalalala
-#>
+$path = "C:\users\lx\gitperso\PSScriptDiagram\sample.ps1"
+$ParsedFile     = [System.Management.Automation.Language.Parser]::ParseFile($path, [ref]$null, [ref]$Null)
+$RawAstDocument = $ParsedFile.FindAll({$args[0] -is [System.Management.Automation.Language.Ast]}, $false)
 
-#ce commentaire doit être le premier commentaire qui apparait dans le corps du noeud
+$x=$RawAstDocument | %{if ( $null -eq $_.parent.parent.parent ) { $t = [nodeutility]::SetNode($_); if ( $null -ne  $t) { $t} } }
 
-## a mettre dans la classe node, et faire les différents cas pour les différents type de node
-SetDescription () {
-        $tokens=@()
-        
-        Switch ( $this.Type ) {
-            "If" { [System.Management.Automation.Language.Parser]::ParseInput($this.raw.Clauses[0].Item2.Extent.Text,[ref]$tokens,[ref]$null) }
-        }
-        
-        $c = $tokens | Where-Object kind -eq "comment"
-        If ( $c.count -gt 0 ) {
-            If ( $c[0].text -match '\<#\r\s+DiagramDescription:(?<description> .+)\r\s+#\>' ) { $this.Description = $Matches.description.Trim() }
-        }
-    }
+PS C:\Users\Lx\GitPerso\PSScriptDiagram> $x[2].Children[0]                        
+
+Type        : ElseIf
+Statement   : ElseIf ( $caca ) From If ( $truc )
+OffSetStart : 655
+OffSetEnd   : 660
+Description : 
+Children    : {ForeachNode, ForeachNode}
+parent      : IfNode
+file        : C:\users\lx\gitperso\PSScriptDiagram\sample.ps1
+
+PS C:\Users\Lx\GitPerso\PSScriptDiagram> $x[2].Children[0].SetDescription("test DESCRIPTIONNNNN")
+Exception calling "Insert" with "2" argument(s): "Specified argument was out of the range of valid values.
+Parameter name: startIndex"
+At line:104 char:9
++         $this.NewContent = $this.raw.Extent.Text.Insert($f+2,$g)
++         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
++ CategoryInfo          : NotSpecified: (:) [], MethodInvocationException
++ FullyQualifiedErrorId : ArgumentOutOfRangeException
+
 ```
+-Start Graph based on description
