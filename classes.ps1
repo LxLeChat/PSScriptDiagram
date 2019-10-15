@@ -49,11 +49,13 @@ class nodeutility {
 class node {
     [string]$Type
     [string]$Statement
-    [int]$OffsetStart
-    [int]$OffsetEnd
+    [int]$OffSetStart
+    [int]$OffSetEnd
     [String]$Description
     $Children = [System.Collections.Generic.List[node]]::new()
     [node]$parent
+    $file
+    hidden $NewContent
     hidden $raw
 
     node () {
@@ -72,7 +74,7 @@ class node {
     }
 
     # normalement on en a plus besoin
-    #inutile
+    <#inutile
     [void] FindChildren ([System.Management.Automation.Language.Ast[]]$e) {
         foreach ( $d in $e ) {
             #write-host "ok..."
@@ -82,8 +84,9 @@ class node {
             }
         }
     }
+    #>
 
-    [void] SetDescription () {
+    [void] FindDescription () {
         $tokens=@()
         Switch ( $this.Type ) {
             "If" { [System.Management.Automation.Language.Parser]::ParseInput($this.raw.Clauses[0].Item2.Extent.Text,[ref]$tokens,[ref]$null) }
@@ -94,6 +97,13 @@ class node {
         If ( $c.count -gt 0 ) {
             If ( $c[0].text -match '\<#\r\s+DiagramDescription:(?<description> .+)\r\s+#\>' ) { $this.Description = $Matches.description.Trim() }
         }
+    }
+
+    [void] SetDescription ([string]$e) {
+        $this.Description = $e
+        $f = (($this.raw.Extent.Text -split '\r?\n')[0]).Length
+        $g = "<#`n    DiagramDescription: $e`n#>`n"
+        $this.NewContent = $this.raw.Extent.Text.Insert($f+2,$g)
     }
     
 }
@@ -108,8 +118,8 @@ Class IfNode : node {
             for( $i=0; $i -lt $e.Clauses.Count ; $i++ ) {
                 if ( $i -eq 0 ) {
                     $this.Statement = "If ( {0} )" -f $e.Clauses[$i].Item1.Extent.Text
-                    $this.OffsetStart = $e.Clauses[$i].Item2.extent.StartOffset
-                    $this.OffsetEnd = $e.Clauses[$i].Item2.extent.EndOffset
+                    $this.OffsetStart = $e.Clauses[$i].Item2.extent.StartLineNumber
+                    $this.OffsetEnd = $e.Clauses[$i].Item2.extent.EndLineNumber
                 } else {
                     $this.Children.Add([ElseIfNode]::new($e.clauses[$i].Item1,$this.Statement,$e.clauses[$i].Item2,$this))
                 }
@@ -121,15 +131,14 @@ Class IfNode : node {
         }
 
         $this.raw = $e
-
+        $this.file = $e.extent.file
+        $this.FindDescription()
         $this.FindChildren($this.raw.Clauses[0].Item2.Statements,$this)
-
-        $this.SetDescription()
 
     }
 
     IfNode ([System.Management.Automation.Language.Ast]$e,[node]$f) {
-        
+
         If ( $e.Clauses.Count -ge 1 ) {
             for( $i=0; $i -lt $e.Clauses.Count ; $i++ ) {
                 if ( $i -eq 0 ) {
@@ -148,11 +157,10 @@ Class IfNode : node {
 
         $this.raw = $e
         $this.parent = $f
-
-        #$this.FindChildren($this.raw.Clauses[0].Item2.Statements)
+        $this.file = $e.extent.file
         $this.FindChildren($this.raw.Clauses[0].Item2.Statements,$this)
 
-        $this.SetDescription()
+        $this.FindDescription()
 
     }
 
@@ -167,6 +175,7 @@ Class ElseNode : node {
         $this.OffsetEnd = $e.extent.EndOffset
         $this.raw = $e
         $this.parent = $f
+        $this.file = $e.extent.file
         $this.FindChildren($this.raw.statements,$this)
     }
 }
@@ -180,6 +189,7 @@ Class ElseIfNode : node {
         $this.OffsetStart = $e.extent.StartOffset
         $this.OffsetEnd = $e.extent.EndOffset
         $this.raw = $e
+        $this.file = $e.extent.file
 
         #$ast = $this.raw.Parent.Clauses.where({$_.item1.extent.text -eq $this.raw.extent.text}).item2.Statements
 
@@ -192,6 +202,7 @@ Class ElseIfNode : node {
         $this.OffsetEnd = $e.extent.EndOffset
         $this.raw = $e
         $this.parent = $j
+        $this.file = $e.extent.file
 
         #$ast = $this.raw.Parent.Clauses.where({$_.item1.extent.text -eq $this.raw.extent.text}).item2.Statements
 
@@ -209,6 +220,7 @@ Class SwitchNode : node {
         $this.OffsetStart = $e.extent.StartOffset
         $this.OffsetEnd = $e.extent.EndOffset
         $this.raw = $e
+        $this.file = $e.extent.file
 
         for( $i=0; $i -lt $e.Clauses.Count ; $i++ ) {
             #$this.Children.Add([SwitchCaseNode]::new($e.clauses[$i].Item1,$this.Statement,$e.clauses[$i].Item2))
@@ -223,6 +235,7 @@ Class SwitchNode : node {
         $this.OffsetEnd = $e.extent.EndOffset
         $this.raw = $e
         $this.parent = $f
+        $this.file = $e.extent.file
 
         for( $i=0; $i -lt $e.Clauses.Count ; $i++ ) {
             #$this.Children.Add([SwitchCaseNode]::new($e.clauses[$i].Item1,$this.Statement,$e.clauses[$i].Item2))
@@ -240,6 +253,7 @@ Class SwitchCaseNode : node {
         $this.OffsetStart = $e.extent.StartOffset
         $this.OffsetEnd = $e.extent.EndOffset
         $this.raw = $e
+        $this.file = $e.extent.file
         $this.FindChildren($f.statements,$this)
         $this.Statement = "Case: {1} for Switch {0}" -f $d,$this.raw.Extent.Text
     }
@@ -250,6 +264,7 @@ Class SwitchCaseNode : node {
         $this.raw = $e
         $this.FindChildren($f.statements,$this)
         $this.parent = $j
+        $this.file = $e.extent.file
         $this.Statement = "Case: {1} for Switch {0}" -f $d,$this.raw.Extent.Text
     }
 }
@@ -262,6 +277,7 @@ Class ForeachNode : node {
         $this.OffsetStart = $e.extent.StartOffset
         $this.OffsetEnd = $e.extent.EndOffset
         $this.raw = $e
+        $this.file = $e.extent.file
 
         $this.FindChildren($this.raw.Body.Statements,$this)
     }
@@ -272,6 +288,7 @@ Class ForeachNode : node {
         $this.OffsetEnd = $e.extent.EndOffset
         $this.raw = $e
         $this.parent = $f
+        $this.file = $e.extent.file
 
         $this.FindChildren($this.raw.Body.Statements,$this)
     }
@@ -285,6 +302,7 @@ Class WhileNode : node {
         $this.OffsetStart = $e.extent.StartOffset
         $this.OffsetEnd = $e.extent.EndOffset
         $this.raw = $e
+        $this.file = $e.extent.file
 
         $this.FindChildren($this.raw.Body.Statements,$this)
         
@@ -296,6 +314,7 @@ Class WhileNode : node {
         $this.OffsetEnd = $e.extent.EndOffset
         $this.raw = $e
         $this.parent = $f
+        $this.file = $e.extent.file
 
         $this.FindChildren($this.raw.Body.Statements,$this)
         
@@ -310,6 +329,7 @@ Class ForNode : node {
         $this.OffsetStart = $e.extent.StartOffset
         $this.OffsetEnd = $e.extent.EndOffset
         $this.raw = $e
+        $this.file = $e.extent.file
 
        $this.FindChildren($this.raw.Body.Statements,$this)
     }
@@ -320,6 +340,7 @@ Class ForNode : node {
         $this.OffsetEnd = $e.extent.EndOffset
         $this.raw = $e
         $this.parent = $f
+        $this.file = $e.extent.file
 
        $this.FindChildren($this.raw.Body.Statements,$this)
     }
@@ -333,6 +354,7 @@ Class DoUntilNode : node {
         $this.OffsetStart = $e.extent.StartOffset
         $this.OffsetEnd = $e.extent.EndOffset
         $this.raw = $e
+        $this.file = $e.extent.file
 
        $this.FindChildren($this.raw.Body.Statements,$this)
     }
@@ -343,6 +365,7 @@ Class DoUntilNode : node {
         $this.OffsetEnd = $e.extent.EndOffset
         $this.raw = $e
         $this.parent = $f
+        $this.file = $e.extent.file
 
        $this.FindChildren($this.raw.Body.Statements,$this)
     }
@@ -356,6 +379,7 @@ Class DoWhileNode : node {
         $this.OffsetStart = $e.extent.StartOffset
         $this.OffsetEnd = $e.extent.EndOffset
         $this.raw = $e
+        $this.file = $e.extent.file
 
        $this.FindChildren($this.raw.Body.Statements,$this)
     }
@@ -366,6 +390,7 @@ Class DoWhileNode : node {
         $this.OffsetEnd = $e.extent.EndOffset
         $this.raw = $e
         $this.parent = $f
+        $this.file = $e.extent.file
         
 
        $this.FindChildren($this.raw.Body.Statements,$this)
