@@ -9,8 +9,12 @@ Idea: Fetching all ifs,loops etc ... to graph a diagram of an entire script (not
 example of i what i want to achieve
 ![plopy](example.png)
 
+## Just Done
+ALl nodes now have a hidden code property, containing their inner "code".. exept for switchnode. (ok for switchcasenode).
+
 # ToDO
--Fix SetDescription() method for elseifnode (maybe others ??). To test: run test.ps1, on a ``elseifnode`` the ``setdescription`` should fail..
+Fix SetDescription() method for elseifnode (maybe others ??). To test: run test.ps1, on a ``elseifnode`` the ``setdescription`` should fail..
+use the code property to do the setdescription.. !
 ```powershell
 $path = "C:\users\lx\gitperso\PSScriptDiagram\sample.ps1"
 $ParsedFile     = [System.Management.Automation.Language.Parser]::ParseFile($path, [ref]$null, [ref]$Null)
@@ -39,11 +43,8 @@ At line:104 char:9
 + FullyQualifiedErrorId : ArgumentOutOfRangeException
 
 ```
-
--Create ``writeback`` method, to update script file... in ``nodeutility`` class ? this should be recursif...
-
--Make sure the ``statement`` property alwas reference the parent. Or is it really necessary ?
-
--If you dont want to put a description, maybe graph nodes text should contain ``statement`` 
-
--Start Graph based on description
+finish FindDescrption
+Create ``writeback`` method, to update script file... in ``nodeutility`` class ? this should be recursif...
+Make sure the ``statement`` property alwas reference the parent. Or is it really necessary ?
+If you dont want to put a description, maybe graph nodes text should contain ``statement``
+Start Graph based on description

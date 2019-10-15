@@ -49,12 +49,11 @@ class nodeutility {
 class node {
     [string]$Type
     [string]$Statement
-    [int]$OffSetStart
-    [int]$OffSetEnd
     [String]$Description
     $Children = [System.Collections.Generic.List[node]]::new()
     [node]$parent
     $file
+    hidden $code
     hidden $NewContent
     hidden $raw
 
@@ -65,26 +64,12 @@ class node {
     ## override with parent, for sublevels
     [void] FindChildren ([System.Management.Automation.Language.Ast[]]$e,[node]$f) {
         foreach ( $d in $e ) {
-            #write-host "ok..."
             If ( $d.GetType() -in [nodeutility]::GetASTitems() ) {
-                #Write-Host "plop"
                 $this.Children.add([nodeutility]::SetNode($d,$f))
             }
         }
     }
 
-    # normalement on en a plus besoin
-    <#inutile
-    [void] FindChildren ([System.Management.Automation.Language.Ast[]]$e) {
-        foreach ( $d in $e ) {
-            #write-host "ok..."
-            If ( $d.GetType() -in [nodeutility]::GetASTitems() ) {
-                #Write-Host "plop"
-                $this.Children.add([nodeutility]::SetNode($d,$this))
-            }
-        }
-    }
-    #>
 
     [void] FindDescription () {
         $tokens=@()
@@ -99,6 +84,7 @@ class node {
         }
     }
 
+    ## a revoir, avec comme base $code !
     [void] SetDescription ([string]$e) {
         $this.Description = $e
         $f = (($this.raw.Extent.Text -split '\r?\n')[0]).Length
@@ -118,8 +104,7 @@ Class IfNode : node {
             for( $i=0; $i -lt $e.Clauses.Count ; $i++ ) {
                 if ( $i -eq 0 ) {
                     $this.Statement = "If ( {0} )" -f $e.Clauses[$i].Item1.Extent.Text
-                    $this.OffsetStart = $e.Clauses[$i].Item2.extent.StartLineNumber
-                    $this.OffsetEnd = $e.Clauses[$i].Item2.extent.EndLineNumber
+                    $this.Code = $e.Clauses[$i].Item2.Extent.Text
                 } else {
                     $this.Children.Add([ElseIfNode]::new($e.clauses[$i].Item1,$this.Statement,$e.clauses[$i].Item2,$this))
                 }
@@ -132,8 +117,9 @@ Class IfNode : node {
 
         $this.raw = $e
         $this.file = $e.extent.file
-        $this.FindDescription()
+
         $this.FindChildren($this.raw.Clauses[0].Item2.Statements,$this)
+        #$this.FindDescription()
 
     }
 
@@ -143,8 +129,7 @@ Class IfNode : node {
             for( $i=0; $i -lt $e.Clauses.Count ; $i++ ) {
                 if ( $i -eq 0 ) {
                     $this.Statement = "If ( {0} )" -f $e.Clauses[$i].Item1.Extent.Text
-                    $this.OffsetStart = $e.Clauses[$i].Item2.extent.StartOffset
-                    $this.OffsetEnd = $e.Clauses[$i].Item2.extent.EndOffset
+                    $this.Code = $e.Clauses[$i].Item2.Extent.Text
                 } else {
                     $this.Children.Add([ElseIfNode]::new($e.clauses[$i].Item1,$this.Statement,$e.clauses[$i].Item2,$this))
                 }
@@ -158,9 +143,9 @@ Class IfNode : node {
         $this.raw = $e
         $this.parent = $f
         $this.file = $e.extent.file
-        $this.FindChildren($this.raw.Clauses[0].Item2.Statements,$this)
 
-        $this.FindDescription()
+        $this.FindChildren($this.raw.Clauses[0].Item2.Statements,$this)
+        #$this.FindDescription()
 
     }
 
@@ -171,42 +156,28 @@ Class ElseNode : node {
 
     ElseNode ([System.Management.Automation.Language.Ast]$e,[string]$d,[node]$f) {
         $this.Statement = "Else From {0}" -f $d
-        $this.OffsetStart = $e.extent.StartOffset
-        $this.OffsetEnd = $e.extent.EndOffset
         $this.raw = $e
+        $this.file = $e.extent.Text
         $this.parent = $f
         $this.file = $e.extent.file
         $this.FindChildren($this.raw.statements,$this)
+        $this.code = $e.extent.Text
     }
 }
 
 Class ElseIfNode : node {
     [String]$Type = "ElseIf"
     #$f represente l element2 du tuple donc si on veut chercher ce qu il y a en dessous il faut utiliser ça
-    #inutile
-    ElseIfNode ([System.Management.Automation.Language.Ast]$e,[string]$d,[System.Management.Automation.Language.Ast]$f) {
-        $this.Statement = "ElseIf ( {0} ) From {1}" -f $e.Extent.Text,$d
-        $this.OffsetStart = $e.extent.StartOffset
-        $this.OffsetEnd = $e.extent.EndOffset
-        $this.raw = $e
-        $this.file = $e.extent.file
-
-        #$ast = $this.raw.Parent.Clauses.where({$_.item1.extent.text -eq $this.raw.extent.text}).item2.Statements
-
-        $this.FindChildren($this.raw.Parent.Clauses.where({$_.item1.extent.text -eq $this.raw.extent.text}).item2.Statements,$this)
-    }
 
     ElseIfNode ([System.Management.Automation.Language.Ast]$e,[string]$d,[System.Management.Automation.Language.Ast]$f,[node]$j) {
         $this.Statement = "ElseIf ( {0} ) From {1}" -f $e.Extent.Text,$d
-        $this.OffsetStart = $e.extent.StartOffset
-        $this.OffsetEnd = $e.extent.EndOffset
         $this.raw = $e
         $this.parent = $j
         $this.file = $e.extent.file
 
-        #$ast = $this.raw.Parent.Clauses.where({$_.item1.extent.text -eq $this.raw.extent.text}).item2.Statements
+        $item1ToSearch = $this.raw.extent.text
+        $this.Code = ($this.raw.Parent.Clauses.where({$_.Item1.extent.text -eq $item1ToSearch})).Item2.Extent.Text
 
-        #$this.FindChildren($this.raw.Parent.Clauses.where({$_.item1.extent.text -eq $this.raw.extent.text}).item2.Statements)
         $this.FindChildren($this.raw.Parent.Clauses.where({$_.item1.extent.text -eq $this.raw.extent.text}).item2.Statements,$this)
     }
 
@@ -217,13 +188,10 @@ Class SwitchNode : node {
 
     SwitchNode ([System.Management.Automation.Language.Ast]$e) {
         $this.Statement = "Switch ( "+ $e.Condition.extent.Text + " )"
-        $this.OffsetStart = $e.extent.StartOffset
-        $this.OffsetEnd = $e.extent.EndOffset
         $this.raw = $e
         $this.file = $e.extent.file
 
         for( $i=0; $i -lt $e.Clauses.Count ; $i++ ) {
-            #$this.Children.Add([SwitchCaseNode]::new($e.clauses[$i].Item1,$this.Statement,$e.clauses[$i].Item2))
             $this.Children.Add([SwitchCaseNode]::new($e.clauses[$i].Item1,$this.Statement,$e.clauses[$i].Item2,$this))
         }
 
@@ -231,42 +199,37 @@ Class SwitchNode : node {
 
     SwitchNode ([System.Management.Automation.Language.Ast]$e,[node]$f) {
         $this.Statement = "Switch ( "+ $e.Condition.extent.Text + " )"
-        $this.OffsetStart = $e.extent.StartOffset
-        $this.OffsetEnd = $e.extent.EndOffset
         $this.raw = $e
         $this.parent = $f
         $this.file = $e.extent.file
 
         for( $i=0; $i -lt $e.Clauses.Count ; $i++ ) {
-            #$this.Children.Add([SwitchCaseNode]::new($e.clauses[$i].Item1,$this.Statement,$e.clauses[$i].Item2))
             $this.Children.Add([SwitchCaseNode]::new($e.clauses[$i].Item1,$this.Statement,$e.clauses[$i].Item2,$this))
         }
 
+    }
+
+    ## pas réussi a chopper le "code" du switch .. du coup la description ne sra pas settable dans le script
+    ## la description ne sera utilisable que pour le graph
+    [void]SetDescription([string]$e) {
+        $this.Description = $e
     }
 }
 
 Class SwitchCaseNode : node {
     [String]$Type = "SwitchCase"
 
-    #inutile
-    SwitchCaseNode ([System.Management.Automation.Language.Ast]$e,[string]$d,[System.Management.Automation.Language.Ast]$f) {
-        $this.OffsetStart = $e.extent.StartOffset
-        $this.OffsetEnd = $e.extent.EndOffset
-        $this.raw = $e
-        $this.file = $e.extent.file
-        $this.FindChildren($f.statements,$this)
-        $this.Statement = "Case: {1} for Switch {0}" -f $d,$this.raw.Extent.Text
-    }
-
     SwitchCaseNode ([System.Management.Automation.Language.Ast]$e,[string]$d,[System.Management.Automation.Language.Ast]$f,[node]$j) {
-        $this.OffsetStart = $e.extent.StartOffset
-        $this.OffsetEnd = $e.extent.EndOffset
         $this.raw = $e
         $this.FindChildren($f.statements,$this)
         $this.parent = $j
         $this.file = $e.extent.file
         $this.Statement = "Case: {1} for Switch {0}" -f $d,$this.raw.Extent.Text
+
+        $item1ToSearch = $this.raw.Value
+        $this.Code = ($this.raw.Parent.Clauses.where({$_.Item1.Value -eq $item1ToSearch})).Item2.Extent.Text
     }
+
 }
 
 Class ForeachNode : node {
@@ -274,8 +237,7 @@ Class ForeachNode : node {
 
     ForeachNode ([System.Management.Automation.Language.Ast]$e) {
         $this.Statement = "Foreach ( "+ $e.Variable.extent.Text +" in " + $e.Condition.extent.Text + " )"
-        $this.OffsetStart = $e.extent.StartOffset
-        $this.OffsetEnd = $e.extent.EndOffset
+        $this.code = $e.body.Extent.Text
         $this.raw = $e
         $this.file = $e.extent.file
 
@@ -284,9 +246,8 @@ Class ForeachNode : node {
 
     ForeachNode ([System.Management.Automation.Language.Ast]$e,[node]$f) {
         $this.Statement = "Foreach ( "+ $e.Variable.extent.Text +" in " + $e.Condition.extent.Text + " )"
-        $this.OffsetStart = $e.extent.StartOffset
-        $this.OffsetEnd = $e.extent.EndOffset
         $this.raw = $e
+        $this.code = $e.body.extent.Text
         $this.parent = $f
         $this.file = $e.extent.file
 
@@ -299,8 +260,7 @@ Class WhileNode : node {
 
     WhileNode ([System.Management.Automation.Language.Ast]$e) {
         $this.Statement = "While ( "+ $e.Condition.extent.Text + " )"
-        $this.OffsetStart = $e.extent.StartOffset
-        $this.OffsetEnd = $e.extent.EndOffset
+        $this.code = $e.body.extent.Text
         $this.raw = $e
         $this.file = $e.extent.file
 
@@ -310,8 +270,7 @@ Class WhileNode : node {
 
     WhileNode ([System.Management.Automation.Language.Ast]$e,[node]$f) {
         $this.Statement = "While ( "+ $e.Condition.extent.Text + " )"
-        $this.OffsetStart = $e.extent.StartOffset
-        $this.OffsetEnd = $e.extent.EndOffset
+        $this.code = $e.body.extent.Text
         $this.raw = $e
         $this.parent = $f
         $this.file = $e.extent.file
@@ -326,8 +285,7 @@ Class ForNode : node {
 
     ForNode ([System.Management.Automation.Language.Ast]$e) {
         $this.Statement = "For ( "+ $e.Condition.extent.Text + " )"
-        $this.OffsetStart = $e.extent.StartOffset
-        $this.OffsetEnd = $e.extent.EndOffset
+        $this.code = $e.body.extent.Text
         $this.raw = $e
         $this.file = $e.extent.file
 
@@ -336,8 +294,7 @@ Class ForNode : node {
 
     ForNode ([System.Management.Automation.Language.Ast]$e,[node]$f) {
         $this.Statement = "For ( "+ $e.Condition.extent.Text + " )"
-        $this.OffsetStart = $e.extent.StartOffset
-        $this.OffsetEnd = $e.extent.EndOffset
+        $this.code = $e.body.extent.Text
         $this.raw = $e
         $this.parent = $f
         $this.file = $e.extent.file
@@ -351,23 +308,21 @@ Class DoUntilNode : node {
 
     DoUntilNode ([System.Management.Automation.Language.Ast]$e) {
         $this.Statement = "Do Until ( "+ $e.Condition.extent.Text + " )"
-        $this.OffsetStart = $e.extent.StartOffset
-        $this.OffsetEnd = $e.extent.EndOffset
+        $this.code = $e.body.extent.Text
         $this.raw = $e
         $this.file = $e.extent.file
 
-       $this.FindChildren($this.raw.Body.Statements,$this)
+        $this.FindChildren($this.raw.Body.Statements,$this)
     }
 
     DoUntilNode ([System.Management.Automation.Language.Ast]$e,[node]$f) {
         $this.Statement = "Do Until ( "+ $e.Condition.extent.Text + " )"
-        $this.OffsetStart = $e.extent.StartOffset
-        $this.OffsetEnd = $e.extent.EndOffset
+        $this.code = $e.body.extent.Text
         $this.raw = $e
         $this.parent = $f
         $this.file = $e.extent.file
 
-       $this.FindChildren($this.raw.Body.Statements,$this)
+        $this.FindChildren($this.raw.Body.Statements,$this)
     }
 }
 
@@ -376,8 +331,7 @@ Class DoWhileNode : node {
 
     DoWhileNode ([System.Management.Automation.Language.Ast]$e) {
         $this.Statement = "Do While ( "+ $e.Condition.extent.Text + " )"
-        $this.OffsetStart = $e.extent.StartOffset
-        $this.OffsetEnd = $e.extent.EndOffset
+        $this.code = $e.body.extent.Text
         $this.raw = $e
         $this.file = $e.extent.file
 
@@ -386,8 +340,7 @@ Class DoWhileNode : node {
 
     DoWhileNode ([System.Management.Automation.Language.Ast]$e,[node]$f) {
         $this.Statement = "Do While ( "+ $e.Condition.extent.Text + " )"
-        $this.OffsetStart = $e.extent.StartOffset
-        $this.OffsetEnd = $e.extent.EndOffset
+        $this.code = $e.body.extent.Text
         $this.raw = $e
         $this.parent = $f
         $this.file = $e.extent.file
