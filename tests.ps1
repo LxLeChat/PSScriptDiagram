@@ -91,6 +91,17 @@ class node {
         $g = "<#`n    DiagramDescription: $e`n#>`n"
         $this.NewContent = $this.raw.Extent.Text.Insert($f+2,$g)
     }
+
+    [object[]] GetChildren ([bool]$r) {
+        If ( $r ) {
+            foreach ( $c in $this.children ) {
+                write-host "Getchildren de $($c.Statement)"
+                $return += $c.GetChildren($r)
+            }
+        }
+        #$return += $this.Children
+        return $this.Children
+    }
     
 }
 
