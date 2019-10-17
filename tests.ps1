@@ -47,19 +47,22 @@ class nodeutility {
 
     [object[]] static plop ([node]$node) {
 
-        write-host "entering node: $($node.Statement)"
-        New-Variable a
+        #write-host "entering node: $($node.Statement)"
+        $a = @()
 
         If ( $node.Children.count -gt 0 ) {
             foreach ( $child in $node.Children ) {
                 
-                write-host "calling plop for: $($child.Statement)"
-                [nodeutility]::plop($child)
+                #write-host "calling plop for: $($child.Statement)"
+                $a += [nodeutility]::plop($child)
+                
             }
 
-            $a = $node.Children
+            $a += $node.Children
+        } else {
+            break;
         }
-        write-host "returning children from: $($node.Statement)"
+        #write-host "returning children from: $($node.Statement)"
         return $a
 
     }
@@ -109,6 +112,27 @@ class node {
         $f = (($this.raw.Extent.Text -split '\r?\n')[0]).Length
         $g = "<#`n    DiagramDescription: $e`n#>`n"
         $this.NewContent = $this.raw.Extent.Text.Insert($f+2,$g)
+    }
+
+    ##
+    [node[]] getchildren ($this) {
+
+        $a = @()
+
+        If ( $this.Children.count -gt 0 ) {
+            foreach ( $child in $this.Children ) {
+                
+                $a += [nodeutility]::plop($child)
+                
+            }
+
+            $a += $this.Children
+        } else {
+            break;
+        }
+        
+        return $a
+
     }
     
 }
