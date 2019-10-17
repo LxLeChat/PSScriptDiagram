@@ -44,6 +44,25 @@ class nodeutility {
             [System.Management.Automation.Language.DoWhileStatementAst]
         )
     }
+
+    [object[]] static plop ([node]$node) {
+
+        write-host "entering node: $($node.Statement)"
+        New-Variable a
+
+        If ( $node.Children.count -gt 0 ) {
+            foreach ( $child in $node.Children ) {
+                
+                write-host "calling plop for: $($child.Statement)"
+                [nodeutility]::plop($child)
+            }
+
+            $a = $node.Children
+        }
+        write-host "returning children from: $($node.Statement)"
+        return $a
+
+    }
 }
 
 class node {
@@ -90,17 +109,6 @@ class node {
         $f = (($this.raw.Extent.Text -split '\r?\n')[0]).Length
         $g = "<#`n    DiagramDescription: $e`n#>`n"
         $this.NewContent = $this.raw.Extent.Text.Insert($f+2,$g)
-    }
-
-    [object[]] GetChildren ([bool]$r) {
-        If ( $r ) {
-            foreach ( $c in $this.children ) {
-                write-host "Getchildren de $($c.Statement)"
-                $return += $c.GetChildren($r)
-            }
-        }
-        #$return += $this.Children
-        return $this.Children
     }
     
 }
@@ -372,3 +380,15 @@ $RawAstDocument = $ParsedFile.FindAll({$args[0] -is [System.Management.Automatio
 $x=$RawAstDocument | %{if ( $null -eq $_.parent.parent.parent ) { $t = [nodeutility]::SetNode($_); if ( $null -ne  $t) { $t} } }
 $x
 
+function test {
+    param (
+        [Node]$node
+    )
+    
+    If ( $node.Children.count -gt 0 ) {
+        foreach ( $child in $node.Children ) {
+            $child
+            test -node $child
+        }
+    }
+}
