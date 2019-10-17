@@ -114,25 +114,23 @@ class node {
         $this.NewContent = $this.raw.Extent.Text.Insert($f+2,$g)
     }
 
-    ##
-    [node[]] getchildren ($this) {
-
+    [node[]] getchildren ([bool]$recurse) {
         $a = @()
 
-        If ( $this.Children.count -gt 0 ) {
-            foreach ( $child in $this.Children ) {
-                
-                $a += [nodeutility]::plop($child)
-                
+        If ( $recurse ) {
+            If ( $this.Children.count -gt 0 ) {
+                foreach ( $child in $this.Children ) {
+                    $a += $child.getchildren($true)
+                }
+                $a += $this.Children
+            } else {
+                break;
             }
-
-            $a += $this.Children
         } else {
-            break;
+            $a=$this.Children
         }
-        
+                
         return $a
-
     }
     
 }
@@ -402,9 +400,10 @@ $RawAstDocument = $ParsedFile.FindAll({$args[0] -is [System.Management.Automatio
 
 
 $x=$RawAstDocument | %{if ( $null -eq $_.parent.parent.parent ) { $t = [nodeutility]::SetNode($_); if ( $null -ne  $t) { $t} } }
-$x
+#$x
 
 
+<#
 $graph = graph -name "test" {
     node $x[2].Statement
 
@@ -419,3 +418,4 @@ $graph = graph -name "test" {
 }
 
 show-psgraph -Source $graph
+#>
