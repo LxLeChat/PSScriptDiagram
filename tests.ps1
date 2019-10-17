@@ -404,15 +404,18 @@ $RawAstDocument = $ParsedFile.FindAll({$args[0] -is [System.Management.Automatio
 $x=$RawAstDocument | %{if ( $null -eq $_.parent.parent.parent ) { $t = [nodeutility]::SetNode($_); if ( $null -ne  $t) { $t} } }
 $x
 
-function test {
-    param (
-        [Node]$node
-    )
-    
-    If ( $node.Children.count -gt 0 ) {
-        foreach ( $child in $node.Children ) {
-            $child
-            test -node $child
+
+$graph = graph -name "test" {
+    node $x[2].Statement
+
+    foreach ( $truc in $a ) {
+        if ( $truc.parent.statement -eq $x[2].Statement ) {
+            node $truc.statement
+            edge -From $x[2].Statement -To $truc.statement
+        } else {
+            edge -from $truc.parent.statement -to $truc.statement
         }
     }
 }
+
+show-psgraph -Source $graph
