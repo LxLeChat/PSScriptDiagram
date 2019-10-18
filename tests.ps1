@@ -2,6 +2,13 @@
 
 class nodeutility {
 
+    [node[]] static ParseFile ([string]$File) {
+        $ParsedFile     = [System.Management.Automation.Language.Parser]::ParseFile($file, [ref]$null, [ref]$Null)
+        $RawAstDocument = $ParsedFile.FindAll({$args[0] -is [System.Management.Automation.Language.Ast]}, $false)
+        $x=$RawAstDocument | ForEach-Object{if ( $null -eq $_.parent.parent.parent ) { $t = [nodeutility]::SetNode($_); if ( $null -ne  $t) { $t} } }
+        return $x
+    }
+
     [node] static SetNode ([object]$e) {
         $node = $null
         Switch ( $e ) {
@@ -45,27 +52,6 @@ class nodeutility {
         )
     }
 
-    [object[]] static plop ([node]$node) {
-
-        #write-host "entering node: $($node.Statement)"
-        $a = @()
-
-        If ( $node.Children.count -gt 0 ) {
-            foreach ( $child in $node.Children ) {
-                
-                #write-host "calling plop for: $($child.Statement)"
-                $a += [nodeutility]::plop($child)
-                
-            }
-
-            $a += $node.Children
-        } else {
-            break;
-        }
-        #write-host "returning children from: $($node.Statement)"
-        return $a
-
-    }
 }
 
 class node {
@@ -116,7 +102,6 @@ class node {
 
     [node[]] getchildren ([bool]$recurse) {
         $a = @()
-
         If ( $recurse ) {
             If ( $this.Children.count -gt 0 ) {
                 foreach ( $child in $this.Children ) {
@@ -392,30 +377,29 @@ Class DoWhileNode : node {
 }
 
 
-## Working example
 
-$path = "C:\users\lx\gitperso\PSScriptDiagram\sample.ps1"
-$ParsedFile     = [System.Management.Automation.Language.Parser]::ParseFile($path, [ref]$null, [ref]$Null)
-$RawAstDocument = $ParsedFile.FindAll({$args[0] -is [System.Management.Automation.Language.Ast]}, $false)
+## Exampple
+$x=[nodeutility]::ParseFile("C:\users\lx\gitperso\PSScriptDiagram\sample.ps1")
 
+$graph = graph -Name "lol" {
 
-$x=$RawAstDocument | %{if ( $null -eq $_.parent.parent.parent ) { $t = [nodeutility]::SetNode($_); if ( $null -ne  $t) { $t} } }
-#$x
+    $x.foreach({
+        node $_.statement
+    })
 
-
-<#
-$graph = graph -name "test" {
-    node $x[2].Statement
-
-    foreach ( $truc in $a ) {
-        if ( $truc.parent.statement -eq $x[2].Statement ) {
-            node $truc.statement
-            edge -From $x[2].Statement -To $truc.statement
-        } else {
-            edge -from $truc.parent.statement -to $truc.statement
-        }
+    for ( $i=0;$i -lt $x.count ; $i++ ) {
+        edge -from $x[$i].Statement -to $x[$i+1].Statement
     }
+
+   $x.foreach({
+        foreach ( $node in $_.getchildren($true) ) {
+            if ( $node.parent.statement -eq $x[$i].Statement ) {
+                edge -From $x[$i].Statement -To $node.statement
+            } else {
+                edge -from $node.parent.statement -to $node.statement
+            }
+        }
+    })
 }
 
-show-psgraph -Source $graph
-#>
+#$graph | show-psgraph

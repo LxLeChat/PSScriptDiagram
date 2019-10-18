@@ -1,6 +1,13 @@
 
 class nodeutility {
 
+    [node[]] static ParseFile ([string]$File) {
+        $ParsedFile     = [System.Management.Automation.Language.Parser]::ParseFile($file, [ref]$null, [ref]$Null)
+        $RawAstDocument = $ParsedFile.FindAll({$args[0] -is [System.Management.Automation.Language.Ast]}, $false)
+        $x=$RawAstDocument | ForEach-Object{if ( $null -eq $_.parent.parent.parent ) { $t = [nodeutility]::SetNode($_); if ( $null -ne  $t) { $t} } }
+        return $x
+    }
+
     [node] static SetNode ([object]$e) {
         $node = $null
         Switch ( $e ) {
@@ -43,6 +50,7 @@ class nodeutility {
             [System.Management.Automation.Language.DoWhileStatementAst]
         )
     }
+
 }
 
 class node {
@@ -89,6 +97,24 @@ class node {
         $f = (($this.raw.Extent.Text -split '\r?\n')[0]).Length
         $g = "<#`n    DiagramDescription: $e`n#>`n"
         $this.NewContent = $this.raw.Extent.Text.Insert($f+2,$g)
+    }
+
+    [node[]] getchildren ([bool]$recurse) {
+        $a = @()
+        If ( $recurse ) {
+            If ( $this.Children.count -gt 0 ) {
+                foreach ( $child in $this.Children ) {
+                    $a += $child.getchildren($true)
+                }
+                $a += $this.Children
+            } else {
+                break;
+            }
+        } else {
+            $a=$this.Children
+        }
+                
+        return $a
     }
     
 }
@@ -348,4 +374,3 @@ Class DoWhileNode : node {
        $this.FindChildren($this.raw.Body.Statements,$this)
     }
 }
-
