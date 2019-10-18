@@ -1,4 +1,5 @@
 
+
 class nodeutility {
 
     [node[]] static ParseFile ([string]$File) {
@@ -81,10 +82,14 @@ class node {
 
     [void] FindDescription () {
         $tokens=@()
+        <#
         Switch ( $this.Type ) {
             "If" { [System.Management.Automation.Language.Parser]::ParseInput($this.raw.Clauses[0].Item2.Extent.Text,[ref]$tokens,[ref]$null) }
             ## Need to be populated
         }
+        #>
+
+        [System.Management.Automation.Language.Parser]::ParseInput($this.code,[ref]$tokens,[ref]$null)
         
         $c = $tokens | Where-Object kind -eq "comment"
         If ( $c.count -gt 0 ) {
@@ -97,6 +102,17 @@ class node {
         $this.Description = $e
         $f = (($this.raw.Extent.Text -split '\r?\n')[0]).Length
         $g = "<#`n    DiagramDescription: $e`n#>`n"
+        $this.NewContent = $this.raw.Extent.Text.Insert($f+2,$g)
+    }
+
+    ## a revoir, avec comme base $code !
+    [void] SetDescription () {
+        If ( $null -eq $this.Description ) {
+            $this.Description = Read-Host -Prompt $("Description for {0}" -f $this.Statement)
+        } Else { Break; }
+        
+        $f = (($this.raw.Extent.Text -split '\r?\n')[0]).Length
+        $g = "<#`n    DiagramDescription: $($this.Description))`n#>`n"
         $this.NewContent = $this.raw.Extent.Text.Insert($f+2,$g)
     }
 
@@ -375,3 +391,4 @@ Class DoWhileNode : node {
        $this.FindChildren($this.raw.Body.Statements,$this)
     }
 }
+

@@ -3,6 +3,9 @@ $snapin = Get-PSSnapin | Where-Object {$_.Name -eq 'Microsoft.SharePoint.Powersh
 
 
 while ($i -lt 10 ) {
+    <#
+        DiagramDescription: Premier While de la life quoi !
+    #>
     "ahahah"
     if ( $kokokok -eq "aaa" ) {
         <#
