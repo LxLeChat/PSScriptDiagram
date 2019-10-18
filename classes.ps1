@@ -60,6 +60,7 @@ class node {
     $Children = [System.Collections.Generic.List[node]]::new()
     [node]$parent
     $file
+    static $id = ([guid]::NewGuid()).Guid
     hidden $code
     hidden $NewContent
     hidden $raw

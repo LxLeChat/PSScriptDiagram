@@ -61,6 +61,7 @@ class node {
     $Children = [System.Collections.Generic.List[node]]::new()
     [node]$parent
     $file
+    static $id = ([guid]::NewGuid()).Guid
     hidden $code
     hidden $NewContent
     hidden $raw
@@ -381,25 +382,29 @@ Class DoWhileNode : node {
 ## Exampple
 $x=[nodeutility]::ParseFile("C:\users\lx\gitperso\PSScriptDiagram\sample.ps1")
 
-$graph = graph -Name "lol" {
+$graph = graph -Name "lol" -attributes @{rankdir='LR'} {
 
     $x.foreach({
-        node $_.statement
+        node $_.id -attributes @{label=$_.statement}
+    })
+
+    $x.GetChildren($True).foreach({
+        node $_.id -attributes @{label=$_.statement}
     })
 
     for ( $i=0;$i -lt $x.count ; $i++ ) {
-        edge -from $x[$i].Statement -to $x[$i+1].Statement
+        edge -from $x[$i].id -to $x[$i+1].id
     }
 
    $x.foreach({
         foreach ( $node in $_.getchildren($true) ) {
             if ( $node.parent.statement -eq $x[$i].Statement ) {
-                edge -From $x[$i].Statement -To $node.statement
+                edge -From $x[$i].id -To $node.id
             } else {
-                edge -from $node.parent.statement -to $node.statement
+                edge -from $node.parent.id -to $node.id
             }
         }
     })
 }
 
-#$graph | show-psgraph
+$a=$graph | show-psgraph
