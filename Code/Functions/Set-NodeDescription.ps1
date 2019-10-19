@@ -2,7 +2,7 @@ function Set-NodeDescription {
     [CmdletBinding()]
     param (
         [node[]]$Node,
-        [Switch]$Modify
+        [switch]$Recurse
     )
     
     begin {
@@ -11,6 +11,9 @@ function Set-NodeDescription {
     
     process {
         $Node.SetDescription()
+        If ( $PSboundParameters['Recurse'].IsPresent ) {
+            $Node.GetChildren($True).SetDescription()
+        }
     }
     
     end {

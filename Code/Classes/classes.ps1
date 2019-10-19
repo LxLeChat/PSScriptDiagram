@@ -116,9 +116,13 @@ class node {
             }
          }
         
-        $f = (($this.raw.Extent.Text -split '\r?\n')[0]).Length
-        $g = "<#`n    DiagramDescription: $($this.Description))`n#>`n"
-        $this.NewContent = $this.raw.Extent.Text.Insert($f+2,$g)
+        # USE code Property !
+        if ( $null -ne $this.Description ) {
+            #$f = (($this.raw.Extent.Text -split '\r?\n')[0]).Length
+            #$g = "<#`n    DiagramDescription: $($this.Description))`n#>`n"
+            #$this.NewContent = $this.raw.Extent.Text.Insert($f+2,$g)
+        }
+        
     }
 
     [node[]] GetChildren ([bool]$recurse) {
