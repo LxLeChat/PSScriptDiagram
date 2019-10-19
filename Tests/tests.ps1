@@ -60,6 +60,7 @@ class node {
     [String]$Description
     $Children = [System.Collections.Generic.List[node]]::new()
     [node]$parent
+    [int]$depth
     $file
     static $id = ([guid]::NewGuid()).Guid
     hidden $code
@@ -78,7 +79,6 @@ class node {
             }
         }
     }
-
 
     [void] FindDescription () {
         $tokens=@()
@@ -116,7 +116,7 @@ class node {
         $this.NewContent = $this.raw.Extent.Text.Insert($f+2,$g)
     }
 
-    [node[]] getchildren ([bool]$recurse) {
+    [node[]] GetChildren ([bool]$recurse) {
         $a = @()
         If ( $recurse ) {
             If ( $this.Children.count -gt 0 ) {
@@ -134,6 +134,18 @@ class node {
         return $a
     }
     
+    ## Need override in case of switchnodecase, elseif, and else
+    [void] SetDepth () {
+        If ( $null -eq $this.parent ) {
+            $this.Depth = 0
+        } Else {
+            If ( $this.type -in ("ElseNode","ElseIfNode","SwitchCaseNode") ) {
+                $this.Depth = $this.Parent.depth
+            } Else {
+                $this.Depth = $this.Parent.Depth + 1
+            }
+        }
+    }
 }
 
 Class IfNode : node {
@@ -159,8 +171,8 @@ Class IfNode : node {
 
         $this.raw = $e
         $this.file = $e.extent.file
-
         $this.FindChildren($this.raw.Clauses[0].Item2.Statements,$this)
+        $this.SetDepth()
         #$this.FindDescription()
 
     }
@@ -185,7 +197,7 @@ Class IfNode : node {
         $this.raw = $e
         $this.parent = $f
         $this.file = $e.extent.file
-
+        $this.SetDepth()
         $this.FindChildren($this.raw.Clauses[0].Item2.Statements,$this)
         #$this.FindDescription()
 
@@ -203,6 +215,7 @@ Class ElseNode : node {
         $this.parent = $f
         $this.file = $e.extent.file
         $this.FindChildren($this.raw.statements,$this)
+        $this.SetDepth()
         $this.code = $e.extent.Text
     }
 }
@@ -216,7 +229,7 @@ Class ElseIfNode : node {
         $this.raw = $e
         $this.parent = $j
         $this.file = $e.extent.file
-
+        $this.SetDepth()
         $item1ToSearch = $this.raw.extent.text
         $this.Code = ($this.raw.Parent.Clauses.where({$_.Item1.extent.text -eq $item1ToSearch})).Item2.Extent.Text
 
@@ -237,6 +250,8 @@ Class SwitchNode : node {
             $this.Children.Add([SwitchCaseNode]::new($e.clauses[$i].Item1,$this.Statement,$e.clauses[$i].Item2,$this))
         }
 
+        $this.SetDepth()
+
     }
 
     SwitchNode ([System.Management.Automation.Language.Ast]$e,[node]$f) {
@@ -248,6 +263,8 @@ Class SwitchNode : node {
         for( $i=0; $i -lt $e.Clauses.Count ; $i++ ) {
             $this.Children.Add([SwitchCaseNode]::new($e.clauses[$i].Item1,$this.Statement,$e.clauses[$i].Item2,$this))
         }
+
+        $this.SetDepth()
 
     }
 
@@ -270,6 +287,8 @@ Class SwitchCaseNode : node {
 
         $item1ToSearch = $this.raw.Value
         $this.Code = ($this.raw.Parent.Clauses.where({$_.Item1.Value -eq $item1ToSearch})).Item2.Extent.Text
+
+        $this.SetDepth()
     }
 
 }
@@ -282,7 +301,7 @@ Class ForeachNode : node {
         $this.code = $e.body.Extent.Text
         $this.raw = $e
         $this.file = $e.extent.file
-
+        $this.SetDepth()
         $this.FindChildren($this.raw.Body.Statements,$this)
     }
 
@@ -292,7 +311,7 @@ Class ForeachNode : node {
         $this.code = $e.body.extent.Text
         $this.parent = $f
         $this.file = $e.extent.file
-
+        $this.SetDepth()
         $this.FindChildren($this.raw.Body.Statements,$this)
     }
 }
@@ -305,7 +324,7 @@ Class WhileNode : node {
         $this.code = $e.body.extent.Text
         $this.raw = $e
         $this.file = $e.extent.file
-
+        $this.SetDepth()
         $this.FindChildren($this.raw.Body.Statements,$this)
         
     }
@@ -316,7 +335,7 @@ Class WhileNode : node {
         $this.raw = $e
         $this.parent = $f
         $this.file = $e.extent.file
-
+        $this.SetDepth()
         $this.FindChildren($this.raw.Body.Statements,$this)
         
     }
@@ -330,8 +349,8 @@ Class ForNode : node {
         $this.code = $e.body.extent.Text
         $this.raw = $e
         $this.file = $e.extent.file
-
-       $this.FindChildren($this.raw.Body.Statements,$this)
+        $this.SetDepth()
+        $this.FindChildren($this.raw.Body.Statements,$this)
     }
 
     ForNode ([System.Management.Automation.Language.Ast]$e,[node]$f) {
@@ -340,8 +359,8 @@ Class ForNode : node {
         $this.raw = $e
         $this.parent = $f
         $this.file = $e.extent.file
-
-       $this.FindChildren($this.raw.Body.Statements,$this)
+        $this.SetDepth()
+        $this.FindChildren($this.raw.Body.Statements,$this)
     }
 }
 
@@ -353,7 +372,7 @@ Class DoUntilNode : node {
         $this.code = $e.body.extent.Text
         $this.raw = $e
         $this.file = $e.extent.file
-
+        $this.SetDepth()
         $this.FindChildren($this.raw.Body.Statements,$this)
     }
 
@@ -363,7 +382,7 @@ Class DoUntilNode : node {
         $this.raw = $e
         $this.parent = $f
         $this.file = $e.extent.file
-
+        $this.SetDepth()
         $this.FindChildren($this.raw.Body.Statements,$this)
     }
 }
@@ -376,8 +395,8 @@ Class DoWhileNode : node {
         $this.code = $e.body.extent.Text
         $this.raw = $e
         $this.file = $e.extent.file
-
-       $this.FindChildren($this.raw.Body.Statements,$this)
+        $this.SetDepth()
+        $this.FindChildren($this.raw.Body.Statements,$this)
     }
 
     DoWhileNode ([System.Management.Automation.Language.Ast]$e,[node]$f) {
@@ -386,9 +405,42 @@ Class DoWhileNode : node {
         $this.raw = $e
         $this.parent = $f
         $this.file = $e.extent.file
-        
-
-       $this.FindChildren($this.raw.Body.Statements,$this)
+        $this.SetDepth()    
+        $this.FindChildren($this.raw.Body.Statements,$this)
     }
 }
 
+
+
+## Exampple
+$x=[nodeutility]::ParseFile("C:\users\lx\gitperso\PSScriptDiagram\sample.ps1")
+
+<#
+$graph = graph -Name "lol" -attributes @{rankdir='LR'} {
+
+    $x.foreach({
+        node $_.id -attributes @{label=$_.statement}
+    })
+
+    $x.GetChildren($True).foreach({
+        node $_.id -attributes @{label=$_.statement}
+    })
+
+    for ( $i=0;$i -lt $x.count ; $i++ ) {
+        edge -from $x[$i].id -to $x[$i+1].id
+    }
+
+   $x.foreach({
+        foreach ( $node in $_.getchildren($true) ) {
+            if ( $node.parent.statement -eq $x[$i].Statement ) {
+                edge -From $x[$i].id -To $node.id
+            } else {
+                edge -from $node.parent.id -to $node.id
+            }
+        }
+    })
+}
+
+$a=$graph | show-psgraph
+
+#>
