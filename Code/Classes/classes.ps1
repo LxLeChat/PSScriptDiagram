@@ -59,10 +59,10 @@ class node {
     [string]$Statement
     [String]$Description
     $Children = [System.Collections.Generic.List[node]]::new()
-    [node]$parent
-    [int]$depth
-    $file
-    $id = ([guid]::NewGuid()).Guid
+    [node]$Parent
+    [int]$Depth
+    $File
+    hidden static $id = ([guid]::NewGuid()).Guid
     hidden $code
     hidden $NewContent
     hidden $raw
@@ -82,13 +82,6 @@ class node {
 
     [void] FindDescription () {
         $tokens=@()
-        <#
-        Switch ( $this.Type ) {
-            "If" { [Parser]::ParseInput($this.raw.Clauses[0].Item2.Extent.Text,[ref]$tokens,[ref]$null) }
-            ## Need to be populated
-        }
-        #>
-
         [Parser]::ParseInput($this.code,[ref]$tokens,[ref]$null)
         
         $c = $tokens | Where-Object kind -eq "comment"
@@ -98,12 +91,12 @@ class node {
     }
 
     ## a revoir, avec comme base $code !
-    [void] SetDescription ([string]$e) {
-        $this.Description = $e
-        $f = (($this.raw.Extent.Text -split '\r?\n')[0]).Length
-        $g = "<#`n    DiagramDescription: $e`n#>`n"
-        $this.NewContent = $this.raw.Extent.Text.Insert($f+2,$g)
-    }
+    #[void] SetDescription ([string]$e) {
+    #    $this.Description = $e
+    #    $f = (($this.raw.Extent.Text -split '\r?\n')[0]).Length
+    #    $g = "<#`n    DiagramDescription: $e`n#>`n"
+    #    $this.NewContent = $this.raw.Extent.Text.Insert($f+2,$g)
+    #}
 
     ## a revoir, avec comme base $code !
     [void] SetDescription () {
