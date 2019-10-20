@@ -62,7 +62,7 @@ class node {
     [node]$parent
     [int]$depth
     $file
-    static $id = ([guid]::NewGuid()).Guid
+    $id = ([guid]::NewGuid()).Guid
     hidden $code
     hidden $NewContent
     hidden $raw
@@ -218,7 +218,7 @@ Class ElseNode : node {
     ElseNode ([Ast]$e,[string]$d,[node]$f) {
         $this.Statement = "Else From {0}" -f $d
         $this.raw = $e
-        $this.file = $e.extent.Text
+        #$this.file = $e.extent.Text
         $this.parent = $f
         $this.file = $e.extent.file
         $this.FindChildren($this.raw.statements,$this)

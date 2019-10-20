@@ -1,6 +1,7 @@
 function Set-NodeDescription {
     [CmdletBinding()]
     param (
+        [Parameter(ValueFromPipeline)]
         [node[]]$Node,
         [switch]$Recurse
     )
@@ -14,6 +15,7 @@ function Set-NodeDescription {
         If ( $PSboundParameters['Recurse'].IsPresent ) {
             $Node.GetChildren($True).SetDescription()
         }
+        $node
     }
     
     end {
