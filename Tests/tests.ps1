@@ -464,3 +464,21 @@ $graph = graph -Name "lol"  {
     }
 }
 #>
+
+
+<# graph avec subgraph, mais larealtion entre subgraph passe par le dernier enfant et le 1° parent
+$graph = graph -Name "lol"  {
+    for ( $i -eq 0 ; $i -lt $x.count; $i++ ) {
+        subgraph _$i {
+            node -name $x[$i].id -attributes @{label=$x[$i].statement}
+            foreach ( $node in $x[$i].GetChildren($true) ) {
+                node -name $node.id -attributes @{label=$node.statement}
+                edge -From $node.parent.id -to $node.id
+            }
+        }
+
+        edge -from $x[$i].getchildren($true)[$x[$i].GetChildren($true).Count -1].id -to $x[$i+1].id -attributes @{ltail="cluster_$i";lhead="cluster_$($i+1)"}
+        
+    }
+}
+#>
