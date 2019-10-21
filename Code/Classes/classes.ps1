@@ -62,7 +62,7 @@ class node {
     [node]$Parent
     [int]$Depth
     $File
-    hidden static $id = ([guid]::NewGuid()).Guid
+    hidden $Guid
     hidden $code
     hidden $NewContent
     hidden $raw
@@ -151,6 +151,11 @@ class node {
                 $this.Depth = $this.Parent.Depth + 1
             }
         }
+
+    }
+
+    hidden [void] SetGuid (){
+        $this.Guid = ([guid]::NewGuid()).Guid
     }
 }
 
@@ -179,6 +184,7 @@ Class IfNode : node {
         $this.file = $e.extent.file
         $this.FindChildren($this.raw.Clauses[0].Item2.Statements,$this)
         $this.SetDepth()
+        $this.Guid()
 
     }
 
@@ -203,6 +209,7 @@ Class IfNode : node {
         $this.parent = $f
         $this.file = $e.extent.file
         $this.SetDepth()
+        $this.Guid()
         $this.FindChildren($this.raw.Clauses[0].Item2.Statements,$this)
 
     }
@@ -220,6 +227,7 @@ Class ElseNode : node {
         $this.file = $e.extent.file
         $this.FindChildren($this.raw.statements,$this)
         $this.SetDepth()
+        $this.Guid()
         $this.code = $e.extent.Text
     }
 }
@@ -234,6 +242,7 @@ Class ElseIfNode : node {
         $this.parent = $j
         $this.file = $e.extent.file
         $this.SetDepth()
+        $this.Guid()
         $item1ToSearch = $this.raw.extent.text
         $this.Code = ($this.raw.Parent.Clauses.where({$_.Item1.extent.text -eq $item1ToSearch})).Item2.Extent.Text
 
@@ -255,6 +264,7 @@ Class SwitchNode : node {
         }
 
         $this.SetDepth()
+        $this.Guid()
 
     }
 
@@ -269,6 +279,7 @@ Class SwitchNode : node {
         }
 
         $this.SetDepth()
+        $this.Guid()
 
     }
 
@@ -293,6 +304,7 @@ Class SwitchCaseNode : node {
         $this.Code = ($this.raw.Parent.Clauses.where({$_.Item1.Value -eq $item1ToSearch})).Item2.Extent.Text
 
         $this.SetDepth()
+        $this.Guid()
     }
 
 }
@@ -306,6 +318,7 @@ Class ForeachNode : node {
         $this.raw = $e
         $this.file = $e.extent.file
         $this.SetDepth()
+        $this.Guid()
         $this.FindChildren($this.raw.Body.Statements,$this)
     }
 
@@ -316,6 +329,7 @@ Class ForeachNode : node {
         $this.parent = $f
         $this.file = $e.extent.file
         $this.SetDepth()
+        $this.Guid()
         $this.FindChildren($this.raw.Body.Statements,$this)
     }
 }
@@ -329,6 +343,7 @@ Class WhileNode : node {
         $this.raw = $e
         $this.file = $e.extent.file
         $this.SetDepth()
+        $this.Guid()
         $this.FindChildren($this.raw.Body.Statements,$this)
         
     }
@@ -340,6 +355,7 @@ Class WhileNode : node {
         $this.parent = $f
         $this.file = $e.extent.file
         $this.SetDepth()
+        $this.Guid()
         $this.FindChildren($this.raw.Body.Statements,$this)
         
     }
@@ -354,6 +370,7 @@ Class ForNode : node {
         $this.raw = $e
         $this.file = $e.extent.file
         $this.SetDepth()
+        $this.Guid()
         $this.FindChildren($this.raw.Body.Statements,$this)
     }
 
@@ -364,6 +381,7 @@ Class ForNode : node {
         $this.parent = $f
         $this.file = $e.extent.file
         $this.SetDepth()
+        $this.Guid()
         $this.FindChildren($this.raw.Body.Statements,$this)
     }
 }
@@ -377,6 +395,7 @@ Class DoUntilNode : node {
         $this.raw = $e
         $this.file = $e.extent.file
         $this.SetDepth()
+        $this.Guid()
         $this.FindChildren($this.raw.Body.Statements,$this)
     }
 
@@ -387,6 +406,7 @@ Class DoUntilNode : node {
         $this.parent = $f
         $this.file = $e.extent.file
         $this.SetDepth()
+        $this.Guid()
         $this.FindChildren($this.raw.Body.Statements,$this)
     }
 }
@@ -400,6 +420,7 @@ Class DoWhileNode : node {
         $this.raw = $e
         $this.file = $e.extent.file
         $this.SetDepth()
+        $this.Guid()
         $this.FindChildren($this.raw.Body.Statements,$this)
     }
 
@@ -409,7 +430,8 @@ Class DoWhileNode : node {
         $this.raw = $e
         $this.parent = $f
         $this.file = $e.extent.file
-        $this.SetDepth()    
+        $this.SetDepth()
+        $this.Guid() 
         $this.FindChildren($this.raw.Body.Statements,$this)
     }
 }
