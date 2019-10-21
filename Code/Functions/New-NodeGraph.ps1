@@ -20,9 +20,10 @@ function New-NodeGraph {
     }
     
     end {
-        If ( ! $PSBoundParameters["GroupAffiliatedNodes"].isPresent ) {
 
-            graph -Name "lol"  {
+        If ( $PSBoundParameters["GroupAffiliatedNodes"].isPresent ) {
+
+            graph -Name "lol" @{rankdir='LR'}  {
                 for ( $i =0 ; $i -lt $arrayofnodes.count; $i++ ) {
                     subgraph _$i {
                         node -name $arrayofnodes[$i].NodeId -attributes @{label=$arrayofnodes[$i]."$FindBetterVariableName"}
@@ -38,7 +39,7 @@ function New-NodeGraph {
 
         } Else {
 
-            $graph = graph -Name "lol" -attributes @{rankdir='LR'} {
+            graph -Name "lol" -attributes @{rankdir='LR'} {
 
                 $arrayofnodes.foreach({
                     node $_.NodeId -attributes @{label=$_."$FindBetterVariableName"}
