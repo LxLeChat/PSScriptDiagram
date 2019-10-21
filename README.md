@@ -7,7 +7,7 @@ Idea: Fetching all ifs,loops etc ... to graph a diagram of an entire script (not
 ![plop](classes.png)
 
 example of i what i want to achieve
-![plopy](example.png)
+![plopy](/images/sample_subgraphs_lastchild_to_firstparent.png)
 
 ## Just Done
 ALl nodes now have a hidden code property, containing their inner "code".. exept for switchnode. (ok for switchcasenode).
