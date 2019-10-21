@@ -126,6 +126,8 @@ class node {
             $d = Read-Host -Prompt $("Actual description for {0} is: {1}" -f $this.Statement,$this.Description)
             if ( $null -ne $d ) {
                 $this.Description = $d
+            } else {
+                $this.Description = $this.Statement
             }
          }
         
