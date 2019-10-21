@@ -25,13 +25,13 @@ function New-NodeGraph {
             $graph = graph -Name "lol"  {
                 for ( $i =0 ; $i -lt $arrayofnodes.count; $i++ ) {
                     subgraph _$i {
-                        node -name $arrayofnodes[$i]::id -attributes @{label=$arrayofnodes[$i]."$FindBetterVariableName"}
+                        node -name $arrayofnodes[$i].Guid -attributes @{label=$arrayofnodes[$i]."$FindBetterVariableName"}
                         foreach ( $n in $arrayofnodes[$i].GetChildren($true) ) {
-                            node -name $n::id -attributes @{label=$n."$FindBetterVariableName"}
-                            edge -From $n.parent::id -to $n::id
+                            node -name $n.Guid -attributes @{label=$n."$FindBetterVariableName"}
+                            edge -From $n.parent.Guid -to $n.Guid
                         }
                     }
-                    edge -from $arrayofnodes[$i].getchildren($true)[$arrayofnodes[$i].GetChildren($true).Count -1]::id -to $arrayofnodes[$i+1]::id -attributes @{ltail="cluster_$i";lhead="cluster_$($i+1)"}
+                    edge -from $arrayofnodes[$i].getchildren($true)[$arrayofnodes[$i].GetChildren($true).Count -1].Guid -to $arrayofnodes[$i+1].Guid -attributes @{ltail="cluster_$i";lhead="cluster_$($i+1)"}
                     
                 }
             }
@@ -41,23 +41,23 @@ function New-NodeGraph {
             $graph = graph -Name "lol" -attributes @{rankdir='LR'} {
 
                 $arrayofnodes.foreach({
-                    node $_::id -attributes @{label=$_."$FindBetterVariableName"}
+                    node $_.Guid -attributes @{label=$_."$FindBetterVariableName"}
                 })
             
                 $arrayofnodes.GetChildren($True).foreach({
-                    node $_::id -attributes @{label=$_."$FindBetterVariableName"}
+                    node $_.Guid -attributes @{label=$_."$FindBetterVariableName"}
                 })
             
                 for ( $i=0;$i -lt $x.count ; $i++ ) {
-                    edge -from $arrayofnodes[$i]::id -to $arrayofnodes[$i+1]::id
+                    edge -from $arrayofnodes[$i].Guid -to $arrayofnodes[$i+1].Guid
                 }
             
                 $arrayofnodes.foreach({
                     foreach ( $n in $_.getchildren($true) ) {
                         if ( $n.parent.statement -eq $arrayofnodes[$i].Statement ) {
-                            edge -From $arrayofnodes[$i]::id -To $n::id
+                            edge -From $arrayofnodes[$i].Guid -To $n.Guid
                         } else {
-                            edge -from $n.parent::id -to $n::id
+                            edge -from $n.parent.Guid -to $n.Guid
                         }
                     }
                 })
