@@ -26,13 +26,19 @@ function New-NodeGraph {
                 for ( $i =0 ; $i -lt $arrayofnodes.count; $i++ ) {
                     subgraph _$i {
                         node -name $arrayofnodes[$i].Guid -attributes @{label=$arrayofnodes[$i]."$FindBetterVariableName"}
-                        foreach ( $n in $arrayofnodes[$i].GetChildren($true) ) {
-                            node -name $n.Guid -attributes @{label=$n."$FindBetterVariableName"}
-                            edge -From $n.parent.Guid -to $n.Guid
+                        If ($arrayofnodes[$i].Children.Count -gt 0 ) {
+                            foreach ( $n in $arrayofnodes[$i].GetChildren($true) ) {
+                                node -name $n.Guid -attributes @{label=$n."$FindBetterVariableName"}
+                                edge -From $n.parent.Guid -to $n.Guid
+                            }
                         }
+
                     }
-                    edge -from $arrayofnodes[$i].getchildren($true)[$arrayofnodes[$i].GetChildren($true).Count -1].Guid -to $arrayofnodes[$i+1].Guid -attributes @{ltail="cluster_$i";lhead="cluster_$($i+1)"}
-                    
+                    If ($arrayofnodes[$i].Children.Count -gt 0 ) {
+                        edge -from $arrayofnodes[$i].getchildren($true)[$arrayofnodes[$i].GetChildren($true).Count -1].Guid -to $arrayofnodes[$i+1].Guid -attributes @{ltail="cluster_$i";lhead="cluster_$($i+1)"}
+                    } Else {
+                        edge -from $arrayofnodes[$i].Guid -to $arrayofnodes[$i+1].Guid -attributes @{ltail="cluster_$i";lhead="cluster_$($i+1)"}
+                    }
                 }
             }
 
