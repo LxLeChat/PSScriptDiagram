@@ -62,7 +62,7 @@ class node {
     [node]$Parent
     [int]$Depth
     $File
-    hidden $Guid
+    hidden $NodeId
     hidden $code
     hidden $NewContent
     hidden $raw
@@ -155,7 +155,7 @@ class node {
     }
 
     hidden [void] Guid (){
-        $this.Guid = ([guid]::NewGuid()).Guid
+        $this.NodeId = ([guid]::NewGuid()).Guid
     }
 }
 
