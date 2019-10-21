@@ -154,7 +154,7 @@ class node {
 
     }
 
-    hidden [void] SetGuid (){
+    hidden [void] Guid (){
         $this.Guid = ([guid]::NewGuid()).Guid
     }
 }
