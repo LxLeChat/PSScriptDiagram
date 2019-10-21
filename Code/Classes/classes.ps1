@@ -62,13 +62,28 @@ class node {
     [node]$Parent
     [int]$Depth
     $File
-    hidden $NodeId
+    hidden $Nodeid
     hidden $code
     hidden $NewContent
     hidden $raw
 
     node () {
         
+    }
+
+    node ([Ast]$e) {
+        $this.raw = $e
+        $this.file = $e.extent.file
+        $this.SetDepth()
+        $this.Guid()
+    }
+
+    node ([Ast]$e,[node]$f) {
+        $this.raw = $e
+        $this.parent = $f
+        $this.file = $e.extent.file
+        $this.SetDepth()
+        $this.Guid()
     }
 
     ## override with parent, for sublevels
@@ -155,7 +170,7 @@ class node {
     }
 
     hidden [void] Guid (){
-        $this.NodeId = ([guid]::NewGuid()).Guid
+        $this.Nodeid = ([guid]::NewGuid()).Guid
     }
 }
 
@@ -163,7 +178,7 @@ Class IfNode : node {
     
     [string]$Type = "If"
 
-    IfNode ([Ast]$e) {
+    IfNode ([Ast]$e) : base ($e) {
         
         If ( $e.Clauses.Count -ge 1 ) {
             for( $i=0; $i -lt $e.Clauses.Count ; $i++ ) {
@@ -171,24 +186,20 @@ Class IfNode : node {
                     $this.Statement = "If ( {0} )" -f $e.Clauses[$i].Item1.Extent.Text
                     $this.Code = $e.Clauses[$i].Item2.Extent.Text
                 } else {
-                    $this.Children.Add([ElseIfNode]::new($e.clauses[$i].Item1,$this.Statement,$e.clauses[$i].Item2,$this))
+                    $this.Children.Add([ElseIfNode]::new($e.clauses[$i].Item1,$this,$this.Statement,$e.clauses[$i].Item2))
                 }
             }
         }
 
         If ( $null -ne $e.ElseClause ) {
-            $this.Children.Add([ElseNode]::new($e.ElseClause,$this.Statement,$this))
+            $this.Children.Add([ElseNode]::new($e.ElseClause,$this,$this.Statement))
         }
-
-        $this.raw = $e
-        $this.file = $e.extent.file
+        
         $this.FindChildren($this.raw.Clauses[0].Item2.Statements,$this)
-        $this.SetDepth()
-        $this.Guid()
 
     }
 
-    IfNode ([Ast]$e,[node]$f) {
+    IfNode ([Ast]$e,[node]$f) : base ($e,$f) {
 
         If ( $e.Clauses.Count -ge 1 ) {
             for( $i=0; $i -lt $e.Clauses.Count ; $i++ ) {
@@ -196,20 +207,16 @@ Class IfNode : node {
                     $this.Statement = "If ( {0} )" -f $e.Clauses[$i].Item1.Extent.Text
                     $this.Code = $e.Clauses[$i].Item2.Extent.Text
                 } else {
-                    $this.Children.Add([ElseIfNode]::new($e.clauses[$i].Item1,$this.Statement,$e.clauses[$i].Item2,$this))
+                    $this.Children.Add([ElseIfNode]::new($e.clauses[$i].Item1,$this,$this.Statement,$e.clauses[$i].Item2))
                 }
             }
         }
 
         If ( $null -ne $e.ElseClause ) {
-            $this.Children.Add([ElseNode]::new($e.ElseClause,$this.Statement,$this))
+            $this.Children.Add([ElseNode]::new($e.ElseClause,$this,$this.Statement))
         }
 
-        $this.raw = $e
-        $this.parent = $f
-        $this.file = $e.extent.file
-        $this.SetDepth()
-        $this.Guid()
+
         $this.FindChildren($this.raw.Clauses[0].Item2.Statements,$this)
 
     }
@@ -219,15 +226,9 @@ Class IfNode : node {
 Class ElseNode : node {
     [String]$Type = "Else"
 
-    ElseNode ([Ast]$e,[string]$d,[node]$f) {
+    ElseNode ([Ast]$e,[node]$f,[string]$d)  : base ($e,$f) {
         $this.Statement = "Else From {0}" -f $d
-        $this.raw = $e
-        #$this.file = $e.extent.Text
-        $this.parent = $f
-        $this.file = $e.extent.file
         $this.FindChildren($this.raw.statements,$this)
-        $this.SetDepth()
-        $this.Guid()
         $this.code = $e.extent.Text
     }
 }
@@ -236,13 +237,8 @@ Class ElseIfNode : node {
     [String]$Type = "ElseIf"
     #$f represente l element2 du tuple donc si on veut chercher ce qu il y a en dessous il faut utiliser ça
 
-    ElseIfNode ([Ast]$e,[string]$d,[Ast]$f,[node]$j) {
+    ElseIfNode ([Ast]$e,[node]$j,[string]$d,[Ast]$f) : base ($e,$j) {
         $this.Statement = "ElseIf ( {0} ) From {1}" -f $e.Extent.Text,$d
-        $this.raw = $e
-        $this.parent = $j
-        $this.file = $e.extent.file
-        $this.SetDepth()
-        $this.Guid()
         $item1ToSearch = $this.raw.extent.text
         $this.Code = ($this.raw.Parent.Clauses.where({$_.Item1.extent.text -eq $item1ToSearch})).Item2.Extent.Text
 
@@ -254,32 +250,21 @@ Class ElseIfNode : node {
 Class SwitchNode : node {
     [String]$Type = "Switch"
 
-    SwitchNode ([Ast]$e) {
+    SwitchNode ([Ast]$e) : base ($e) {
         $this.Statement = "Switch ( "+ $e.Condition.extent.Text + " )"
-        $this.raw = $e
-        $this.file = $e.extent.file
 
         for( $i=0; $i -lt $e.Clauses.Count ; $i++ ) {
-            $this.Children.Add([SwitchCaseNode]::new($e.clauses[$i].Item1,$this.Statement,$e.clauses[$i].Item2,$this))
+            $this.Children.Add([SwitchCaseNode]::new($e.clauses[$i].Item1,$this,$this.Statement,$e.clauses[$i].Item2))
         }
-
-        $this.SetDepth()
-        $this.Guid()
 
     }
 
-    SwitchNode ([Ast]$e,[node]$f) {
+    SwitchNode ([Ast]$e,[node]$f) : base ($e,$f) {
         $this.Statement = "Switch ( "+ $e.Condition.extent.Text + " )"
-        $this.raw = $e
-        $this.parent = $f
-        $this.file = $e.extent.file
 
         for( $i=0; $i -lt $e.Clauses.Count ; $i++ ) {
             $this.Children.Add([SwitchCaseNode]::new($e.clauses[$i].Item1,$this.Statement,$e.clauses[$i].Item2,$this))
         }
-
-        $this.SetDepth()
-        $this.Guid()
 
     }
 
@@ -293,18 +278,11 @@ Class SwitchNode : node {
 Class SwitchCaseNode : node {
     [String]$Type = "SwitchCase"
 
-    SwitchCaseNode ([Ast]$e,[string]$d,[Ast]$f,[node]$j) {
-        $this.raw = $e
-        $this.FindChildren($f.statements,$this)
-        $this.parent = $j
-        $this.file = $e.extent.file
+    SwitchCaseNode ([Ast]$e,[node]$j,[string]$d,[Ast]$f) : base ($e,$j) {
         $this.Statement = "Case: {1} for Switch {0}" -f $d,$this.raw.Extent.Text
 
         $item1ToSearch = $this.raw.Value
         $this.Code = ($this.raw.Parent.Clauses.where({$_.Item1.Value -eq $item1ToSearch})).Item2.Extent.Text
-
-        $this.SetDepth()
-        $this.Guid()
     }
 
 }
@@ -312,24 +290,15 @@ Class SwitchCaseNode : node {
 Class ForeachNode : node {
     [String]$Type = "Foreach"
 
-    ForeachNode ([Ast]$e) {
+    ForeachNode ([Ast]$e) : base ($e) {
         $this.Statement = "Foreach ( "+ $e.Variable.extent.Text +" in " + $e.Condition.extent.Text + " )"
         $this.code = $e.body.Extent.Text
-        $this.raw = $e
-        $this.file = $e.extent.file
-        $this.SetDepth()
-        $this.Guid()
         $this.FindChildren($this.raw.Body.Statements,$this)
     }
 
-    ForeachNode ([Ast]$e,[node]$f) {
+    ForeachNode ([Ast]$e,[node]$f) : base ($e,$f) {
         $this.Statement = "Foreach ( "+ $e.Variable.extent.Text +" in " + $e.Condition.extent.Text + " )"
-        $this.raw = $e
         $this.code = $e.body.extent.Text
-        $this.parent = $f
-        $this.file = $e.extent.file
-        $this.SetDepth()
-        $this.Guid()
         $this.FindChildren($this.raw.Body.Statements,$this)
     }
 }
@@ -337,25 +306,16 @@ Class ForeachNode : node {
 Class WhileNode : node {
     [string]$Type = "While"
 
-    WhileNode ([Ast]$e) {
+    WhileNode ([Ast]$e) : base ($e) {
         $this.Statement = "While ( "+ $e.Condition.extent.Text + " )"
         $this.code = $e.body.extent.Text
-        $this.raw = $e
-        $this.file = $e.extent.file
-        $this.SetDepth()
-        $this.Guid()
         $this.FindChildren($this.raw.Body.Statements,$this)
         
     }
 
-    WhileNode ([Ast]$e,[node]$f) {
+    WhileNode ([Ast]$e,[node]$f) : base ($e,$f) {
         $this.Statement = "While ( "+ $e.Condition.extent.Text + " )"
         $this.code = $e.body.extent.Text
-        $this.raw = $e
-        $this.parent = $f
-        $this.file = $e.extent.file
-        $this.SetDepth()
-        $this.Guid()
         $this.FindChildren($this.raw.Body.Statements,$this)
         
     }
@@ -364,24 +324,15 @@ Class WhileNode : node {
 Class ForNode : node {
     [string]$Type = "For"
 
-    ForNode ([Ast]$e) {
+    ForNode ([Ast]$e) : base ($e) {
         $this.Statement = "For ( "+ $e.Condition.extent.Text + " )"
         $this.code = $e.body.extent.Text
-        $this.raw = $e
-        $this.file = $e.extent.file
-        $this.SetDepth()
-        $this.Guid()
         $this.FindChildren($this.raw.Body.Statements,$this)
     }
 
-    ForNode ([Ast]$e,[node]$f) {
+    ForNode ([Ast]$e,[node]$f) : base($e,$f) {
         $this.Statement = "For ( "+ $e.Condition.extent.Text + " )"
         $this.code = $e.body.extent.Text
-        $this.raw = $e
-        $this.parent = $f
-        $this.file = $e.extent.file
-        $this.SetDepth()
-        $this.Guid()
         $this.FindChildren($this.raw.Body.Statements,$this)
     }
 }
@@ -389,24 +340,15 @@ Class ForNode : node {
 Class DoUntilNode : node {
     [string]$Type = "DoUntil"
 
-    DoUntilNode ([Ast]$e) {
+    DoUntilNode ([Ast]$e) : base($e) {
         $this.Statement = "Do Until ( "+ $e.Condition.extent.Text + " )"
         $this.code = $e.body.extent.Text
-        $this.raw = $e
-        $this.file = $e.extent.file
-        $this.SetDepth()
-        $this.Guid()
         $this.FindChildren($this.raw.Body.Statements,$this)
     }
 
-    DoUntilNode ([Ast]$e,[node]$f) {
+    DoUntilNode ([Ast]$e,[node]$f) : base($e,$f) {
         $this.Statement = "Do Until ( "+ $e.Condition.extent.Text + " )"
         $this.code = $e.body.extent.Text
-        $this.raw = $e
-        $this.parent = $f
-        $this.file = $e.extent.file
-        $this.SetDepth()
-        $this.Guid()
         $this.FindChildren($this.raw.Body.Statements,$this)
     }
 }
@@ -414,24 +356,15 @@ Class DoUntilNode : node {
 Class DoWhileNode : node {
     [string]$Type = "DoWhile"
 
-    DoWhileNode ([Ast]$e) {
+    DoWhileNode ([Ast]$e) : base($e) {
         $this.Statement = "Do While ( "+ $e.Condition.extent.Text + " )"
         $this.code = $e.body.extent.Text
-        $this.raw = $e
-        $this.file = $e.extent.file
-        $this.SetDepth()
-        $this.Guid()
         $this.FindChildren($this.raw.Body.Statements,$this)
     }
 
-    DoWhileNode ([Ast]$e,[node]$f) {
+    DoWhileNode ([Ast]$e,[node]$f) : base($e,$f) {
         $this.Statement = "Do While ( "+ $e.Condition.extent.Text + " )"
         $this.code = $e.body.extent.Text
-        $this.raw = $e
-        $this.parent = $f
-        $this.file = $e.extent.file
-        $this.SetDepth()
-        $this.Guid() 
         $this.FindChildren($this.raw.Body.Statements,$this)
     }
 }
