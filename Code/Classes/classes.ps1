@@ -101,7 +101,8 @@ class node {
         
         $c = $tokens | Where-Object kind -eq "comment"
         If ( $c.count -gt 0 ) {
-            If ( $c[0].text -match '\<#\r\s+DiagramDescription:(?<description> .+)\r\s+#\>' ) {
+            #If ( $c[0].text -match '\<#\r\s+DiagramDescription:(?<description> .+)\r\s+#\>' ) {
+            If ( $c[0].text -match 'DiagramDescription:(?<description>\s?[\w\s]+)' ) {
                 $this.Description = $Matches.description.Trim() 
             } Else {
                 $this.Description = $this.Statement
