@@ -36,7 +36,7 @@ function New-NodeGraph {
                     subgraph _$i {
                         node -name $arrayofnodes[$i].NodeId -attributes @{label=$labelscript.Invoke($arrayofnodes[$i]);shape=$Shapes.invoke($arrayofnodes[$i])}
                         foreach ( $n in $arrayofnodes[$i].GetChildren($true) ) {
-                            node -name $n.NodeId -attributes @{label=$labelscript.Invoke($n);shape=$Shapes.invoke($arrayofnodes[$i])}
+                            node -name $n.NodeId -attributes @{label=$labelscript.Invoke($n);shape=$Shapes.invoke($n)}
                             edge -From $n.parent.NodeId -to $n.NodeId
                         }
                     }

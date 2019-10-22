@@ -77,6 +77,9 @@ class nodeutility {
 
 }
 
+## Ajouter un noeud qu'on pourrait appeler CodeNode, par exemple dans un if , si il n y a rien dedans ...
+## Pour le flowchart comme ça on peut dire ce que le if fait
+## coup est ce que il faudrait pas que le else et elseif ne soient pas ua meme niveau ...?!
 class node {
     [string]$Type
     [string]$Statement
