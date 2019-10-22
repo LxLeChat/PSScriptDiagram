@@ -9,6 +9,13 @@ class nodeutility {
         return $x
     }
 
+    [node[]] static ParseString ([string[]]$String) {
+        $ParsedFile     = [Parser]::ParseInput($String, [ref]$null, [ref]$Null)
+        $RawAstDocument = $ParsedFile.FindAll({$args[0] -is [Ast]}, $false)
+        $x=$RawAstDocument | ForEach-Object{if ( $null -eq $_.parent.parent.parent ) { $t = [nodeutility]::SetNode($_); if ( $null -ne  $t) { $t} } }
+        return $x
+    }
+
     [node] static SetNode ([object]$e) {
         $node = $null
         Switch ( $e ) {
@@ -419,4 +426,4 @@ Class DoWhileNode : node {
 
 
 ## Exampple
-$x=[nodeutility]::ParseFile("C:\users\lx\gitperso\PSScriptDiagram\sample.ps1")
+$x=[nodeutility]::ParseFile("$PWD\Tests\scripts_samples\sample.ps1")
