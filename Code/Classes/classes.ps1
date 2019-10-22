@@ -204,6 +204,15 @@ class node {
     hidden [void] Guid (){
         $this.Nodeid = ([guid]::NewGuid()).Guid
     }
+
+    [void] SetProcessNode () { 
+        If ( $this.Children.Count -eq 0 ) { $this.Children.Add([ProcessNode]::new()) }
+    }
+}
+
+Class ProcessNode : node {
+    [string]$Type = "Process"
+    [string]$Statement = "ProcessBlock"
 }
 
 Class IfNode : node {
