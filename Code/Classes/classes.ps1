@@ -59,6 +59,22 @@ class nodeutility {
         )
     }
 
+    [String] static SetDefaultShape ([String]$e) {
+        $Shape = $Null
+        Switch ( $e ) {
+            "If"       { $Shape = "diamond"       }
+            "ElseIf"   { $Shape = "diamond"       }
+            "Foreach"  { $Shape = "parallelogram" }
+            "While"    { $Shape = "parallelogram" }
+            "DoWhile"  { $Shape = "parallelogram" }
+            "DoUntil"  { $Shape = "parallelogram" }
+            "For"      { $Shape = "parallelogram" }
+            Defaut     { $Shape = "box" }
+            
+        }
+        return $Shape
+    }
+
 }
 
 class node {
@@ -69,6 +85,7 @@ class node {
     [node]$Parent
     [int]$Depth
     $File
+    hidden $DefaultShape
     hidden $Nodeid
     hidden $code
     hidden $NewContent
@@ -83,6 +100,7 @@ class node {
         $this.file = $e.extent.file
         $this.SetDepth()
         $this.Guid()
+        $this.DefaultShape = [nodeutility]::SetDefaultShape($this.Type)
     }
 
     node ([Ast]$e,[node]$f) {
@@ -91,6 +109,7 @@ class node {
         $this.file = $e.extent.file
         $this.SetDepth()
         $this.Guid()
+        $this.DefaultShape = [nodeutility]::SetDefaultShape($this.Type)
     }
 
     ## override with parent, for sublevels

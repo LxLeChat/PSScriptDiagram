@@ -3,7 +3,8 @@ function New-NodeGraph {
     param (
         [node[]]$node,
         [switch]$UseDescription,
-        [switch]$GroupAffiliatedNodes
+        [switch]$GroupAffiliatedNodes,
+        [Switch]$UseFlowShapes
     )
     
     begin {
@@ -12,6 +13,12 @@ function New-NodeGraph {
             $labelscript = { If ( $null -eq $args[0].Description ){ $args[0].Statement } else { $args[0].Description } }
         } else {
             $labelscript = { $args[0].Statement }
+        }
+
+        If ( $PSBoundParameters["UseFlowShapes"].isPresent ) {
+            $Shapes = { $args[0].DefaultShape }
+        } else {
+            $Shapes = { "Box" }
         }
 
     }
@@ -27,9 +34,9 @@ function New-NodeGraph {
             graph -Name "lol" @{rankdir='LR'}  {
                 for ( $i =0 ; $i -lt $arrayofnodes.count; $i++ ) {
                     subgraph _$i {
-                        node -name $arrayofnodes[$i].NodeId -attributes @{label=$labelscript.Invoke($arrayofnodes[$i])}
+                        node -name $arrayofnodes[$i].NodeId -attributes @{label=$labelscript.Invoke($arrayofnodes[$i]);shape=$Shapes.invoke($arrayofnodes[$i])}
                         foreach ( $n in $arrayofnodes[$i].GetChildren($true) ) {
-                            node -name $n.NodeId -attributes @{label=$labelscript.Invoke($n)}
+                            node -name $n.NodeId -attributes @{label=$labelscript.Invoke($n);shape=$Shapes.invoke($arrayofnodes[$i])}
                             edge -From $n.parent.NodeId -to $n.NodeId
                         }
                     }
@@ -43,11 +50,11 @@ function New-NodeGraph {
             graph -Name "lol" -attributes @{rankdir='LR'} {
 
                 $arrayofnodes.foreach({
-                    node $_.NodeId -attributes @{label=$labelscript.Invoke($_)}
+                    node $_.NodeId -attributes @{label=$labelscript.Invoke($_);shape=$Shapes.invoke($arrayofnodes[$i])}
                 })
             
                 $arrayofnodes.GetChildren($True).foreach({
-                    node $_.NodeId -attributes @{label=$labelscript.Invoke($_)}
+                    node $_.NodeId -attributes @{label=$labelscript.Invoke($_);shape=$Shapes.invoke($arrayofnodes[$i])}
                 })
             
                 for ( $i=0;$i -lt $x.count ; $i++ ) {
