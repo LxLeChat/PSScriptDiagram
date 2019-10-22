@@ -2,17 +2,18 @@ function New-NodeGraph {
     [CmdletBinding()]
     param (
         [node[]]$node,
-        [switch]$UseDescirption,
+        [switch]$UseDescription,
         [switch]$GroupAffiliatedNodes
     )
     
     begin {
         $arrayofnodes = @()
         If ( $PSBoundParameters["UseDescription"].isPresent ) {
-            $FindBetterVariableName = "Description"
+            $labelscript = { If ( $null -eq $args[0].Description ){ $args[0].Statement } else { $args[0].Description } }
         } else {
-            $FindBetterVariableName = "Statement"
+            $labelscript = { $args[0].Statement }
         }
+
     }
     
     process {
@@ -26,9 +27,9 @@ function New-NodeGraph {
             graph -Name "lol" @{rankdir='LR'}  {
                 for ( $i =0 ; $i -lt $arrayofnodes.count; $i++ ) {
                     subgraph _$i {
-                        node -name $arrayofnodes[$i].NodeId -attributes @{label=$arrayofnodes[$i]."$FindBetterVariableName"}
+                        node -name $arrayofnodes[$i].NodeId -attributes @{label=$labelscript.Invoke($arrayofnodes[$i])}
                         foreach ( $n in $arrayofnodes[$i].GetChildren($true) ) {
-                            node -name $n.NodeId -attributes @{label=$n."$FindBetterVariableName"}
+                            node -name $n.NodeId -attributes @{label=$labelscript.Invoke($n)}
                             edge -From $n.parent.NodeId -to $n.NodeId
                         }
                     }
@@ -42,11 +43,11 @@ function New-NodeGraph {
             graph -Name "lol" -attributes @{rankdir='LR'} {
 
                 $arrayofnodes.foreach({
-                    node $_.NodeId -attributes @{label=$_."$FindBetterVariableName"}
+                    node $_.NodeId -attributes @{label=$labelscript.Invoke($_)}
                 })
             
                 $arrayofnodes.GetChildren($True).foreach({
-                    node $_.NodeId -attributes @{label=$_."$FindBetterVariableName"}
+                    node $_.NodeId -attributes @{label=$labelscript.Invoke($_)}
                 })
             
                 for ( $i=0;$i -lt $x.count ; $i++ ) {
