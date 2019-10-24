@@ -1,0 +1,140 @@
+## pour le if
+[System.Collections.Generic.List[node]]$x = @()
+$x = find-node .\Tests\scripts_samples\small.ps1
+
+[System.Collections.Generic.List[object]]$y = @()
+foreach ($node in $x){
+    $c = $node | select type,nodeid
+    $y.Add($c)
+}
+
+function test-graph {
+    [CmdletBinding()]
+    param (
+        $x,
+        $y  
+    )
+    
+    Foreach ( $node in $x ) {
+        Switch ( $node.Type ) {
+            "If" {
+                gif -listedetypes $y -node $node
+                If ( $node.Children.count -gt 0 ) {
+                    Foreach ( $child in $node.Children ) {
+                        test-graph -x $child -y $node.Children
+                    }
+                }
+            }
+
+            "Else" {
+                gelse -listedetypes $y -node $node
+                If ( $node.Children.count -gt 0 ) {
+                    Foreach ( $child in $node.Children ) {
+                        test-graph -x $child -y $node.Children
+                    }
+                }
+            }
+        }
+    }    
+
+}
+
+
+
+$graph = test-graph -x $x -y $y
+
+
+
+## pour le else
+[System.Collections.Generic.List[object]]$y2 = @()
+foreach ($node in $x.children){
+    $c = $node | select type,nodeid
+    $y2.Add($c)
+}
+
+
+
+function Gif {
+    param(
+        $listedetypes,
+        $node
+    )
+
+    ##findindex count a partir de 1
+    $nodeindex = $listedetypes.FindIndex({$args[0].nodeid -eq $node.nodeid })
+
+    $String = "node $($node.NodeId) -attributes @{shape=`"$($node.defaultshape)`"}"
+        If ( $node.Children.Count -gt 0 ) {
+                
+            $c = $node.children[0]
+
+            ## branche FALSE
+            If ( $c.Type -in ("ElseIf","Else") ) {
+                $string = $string + ";edge -from $($node.nodeid) -to $($c.NodeId) -Attributes @{Label='False'}"
+            }
+
+            ## la on est dans la branche "True"
+            $plop = $node.Children | where {$_.type -notin ("ElseIf","Else") } 
+            If ( $null -ne $plop) {
+                For ( $i= 0 ; $i -lt $plop.Count ; $i++ ) {
+                    If ( $i -eq 0 ) {
+                        $string = $string + ";edge -from $($node.nodeid) -to $($plop[$i].nodeId) -Attributes @{Label='True'} "
+                    } else {
+                        $string = $string + ";edge -from $($plop[$i-1].nodeId) -to $($plop[$i].nodeId)"
+                    }
+                }
+                #write-host "Node: $($node.statement)"
+                $string = $string + ";edge -from $($plop[$i-1].nodeId) -to `"EndIfProcess_$($plop[$i-1].Parent.NodeId)`""
+            }
+        
+        } else {
+            #write-host "Node: $($node.statement)"
+            $string = $string + ";edge -from $($node.nodeid) -to $($listedetypes[$nodeindex].NodeId)"
+        }
+
+    $string
+}
+
+function GElse {
+    param(
+        $listedetypes,
+        $node
+    )
+
+    ##findindex count a partir de 1
+    $nodeindex = $listedetypes.FindIndex({$args[0].nodeid -eq $node.nodeid })
+
+    $String = "node $($node.NodeId)"
+        If ( $node.Children.Count -gt 0 ) {
+
+            For ( $i= 0 ; $i -lt $node.Children.Count ; $i++ ) {
+                If ( $i -eq 0 ) {
+                    $string = $string + ";edge -from $($node.nodeid) -to $($node.children[$i].nodeId)"
+                } else {
+                    $string = $string + ";edge -from $($node.children[$i-1].nodeId) -to $($node.children[$i].nodeId)"
+                }
+            }
+
+            #write-host "ELSE, Node: $($node.statement)"
+            $string = $string + ";edge -from $($node.children[$i-1].nodeId) -to `"EndIfProcess_$($node.Parent.NodeId)`""
+
+        } else {
+            #write-host "ELSE, Node: $($node.statement)"
+            $string = $string+";edge -from $($node.nodeId) -to `"ElseProcess_$($node.nodeId)`""
+            $string = $string+";edge -from `"ElseProcess_$($node.nodeId)`" -to `"EndIfProcess_$($node.Parent.NodeId)`""
+        }
+    
+    #$string = $string + ";Edge -from `"EndIfProcess_$($node.NodeId)`" -to $($listedetypes[$nodeindex].nodeId)"
+
+    $string
+}
+
+
+
+$string = 
+$string = $string + ";" + (Gelse -listedetypes $y2 -node $x.children[0])
+
+gif -listedetypes $y2 -node $x[0].children[2]
+
+
+$graph = graph "lol" { ([scriptblock]::Create($plop)).invoke() }
