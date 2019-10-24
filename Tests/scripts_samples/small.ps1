@@ -1,9 +1,19 @@
 if ( $i -eq 10) {
-    Foreach ( $a in $b) {
-        ##do something
-        ## ajouter un noeud nodecode
+    foreach($plop in $ploppy) {}
+    for ( $i = 1 ; $i -lt 10;$i++) {}
+
+    If ( "bmlaa") {
+        foreach($plop in $caca){}
+    } Else {
+        "azeazea"
     }
+
 } Else {
     ## Whathever
-    ## ajouter un noeud nodecode
+    foreach ( $a in $b) {   }
+    foreach ( $b in $z ) {}
+}
+    
+foreach ( $plop in $caca) {
+
 }
