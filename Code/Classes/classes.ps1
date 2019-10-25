@@ -4,8 +4,20 @@ class nodeutility {
 
     [node[]] static ParseFile ([string]$File) {
         $ParsedFile     = [Parser]::ParseFile($file, [ref]$null, [ref]$Null)
+        $c = [System.Collections.Generic.LinkedList[string]]::new()
+        #$x | % {$c.AddLast([System.Collections.Generic.LinkedListNode[string]]::new($_.nodeId))}
         $RawAstDocument = $ParsedFile.FindAll({$args[0] -is [Ast]}, $false)
-        $x=$RawAstDocument | ForEach-Object{if ( $null -eq $_.parent.parent.parent ) { $t = [nodeutility]::SetNode($_); if ( $null -ne  $t) { $t} } }
+        $x=$RawAstDocument | ForEach-Object{
+            if ( $null -eq $_.parent.parent.parent ) { 
+                $t = [nodeutility]::SetNode($_)
+                if ( $null -ne  $t) {
+                    $c.AddLast([System.Collections.Generic.LinkedListNode[string]]::new($t.nodeId))
+                    $t.SameLvlNodes = $c
+                    $t
+                    
+                }
+            }
+        }
         return $x
     }
 
@@ -88,6 +100,7 @@ class node {
     [node]$Parent
     [int]$Depth
     $File
+    $SameLvlNodes
     hidden $DefaultShape
     hidden $Nodeid
     hidden $code
@@ -117,9 +130,25 @@ class node {
 
     ## override with parent, for sublevels
     [void] FindChildren ([Ast[]]$e,[node]$f) {
+        $c = [System.Collections.Generic.LinkedList[string]]::new()
         foreach ( $d in $e ) {
             If ( $d.GetType() -in [nodeutility]::GetASTitems() ) {
-                $this.Children.add([nodeutility]::SetNode($d,$f))
+                $node = [nodeutility]::SetNode($d,$f)
+                $c.AddLast([System.Collections.Generic.LinkedListNode[string]]::new($node.nodeId))
+                $node.SameLvlNodes = $c
+                $this.Children.add($node)
+            }
+        }
+    }
+
+    ## override with parent, for sublevels
+    [void] FindChildren ([Ast[]]$e,[node]$f,[System.Collections.Generic.LinkedList[string]]$g) {
+        foreach ( $d in $e ) {
+            If ( $d.GetType() -in [nodeutility]::GetASTitems() ) {
+                $node = [nodeutility]::SetNode($d,$f)
+                $g.AddLast([System.Collections.Generic.LinkedListNode[string]]::new($node.nodeId))
+                $node.SameLvlNodes = $g
+                $this.Children.add($node)
             }
         }
     }
@@ -218,48 +247,110 @@ Class ProcessNode : node {
 Class IfNode : node {
     
     [string]$Type = "If"
+    hidden [string] $ChildElseId
+    hidden [system.collections.generic.list[string]]$ChildElseIfIds = @()
 
     IfNode ([Ast]$e) : base ($e) {
         
+        $c = [System.Collections.Generic.LinkedList[string]]::new()
+
         If ( $e.Clauses.Count -ge 1 ) {
             for( $i=0; $i -lt $e.Clauses.Count ; $i++ ) {
                 if ( $i -eq 0 ) {
                     $this.Statement = "If ( {0} )" -f $e.Clauses[$i].Item1.Extent.Text
                     $this.Code = $e.Clauses[$i].Item2.Extent.Text
                 } else {
-                    $this.Children.Add([ElseIfNode]::new($e.clauses[$i].Item1,$this,$this.Statement,$e.clauses[$i].Item2))
+                    $node = [ElseIfNode]::new($e.clauses[$i].Item1,$this,$this.Statement,$e.clauses[$i].Item2)
+                    $c.AddLast([System.Collections.Generic.LinkedListNode[string]]::new($node.nodeId))
+                    $node.SameLvlNodes = $c
+                    $this.Children.Add($node)
                 }
             }
         }
 
         If ( $null -ne $e.ElseClause ) {
-            $this.Children.Add([ElseNode]::new($e.ElseClause,$this,$this.Statement))
+            #$this.Children.Add([ElseNode]::new($e.ElseClause,$this,$this.Statement))
+            $node = [ElseNode]::new($e.ElseClause,$this,$this.Statement)
+            $c.AddLast([System.Collections.Generic.LinkedListNode[string]]::new($node.nodeId))
+            $node.SameLvlNodes = $c
+            $this.Children.Add($node)
         }
         
-        $this.FindChildren($this.raw.Clauses[0].Item2.Statements,$this)
+        $this.FindChildren($this.raw.Clauses[0].Item2.Statements,$this,$c)
 
     }
 
     IfNode ([Ast]$e,[node]$f) : base ($e,$f) {
 
+        $c = [System.Collections.Generic.LinkedList[string]]::new()
+
         If ( $e.Clauses.Count -ge 1 ) {
             for( $i=0; $i -lt $e.Clauses.Count ; $i++ ) {
                 if ( $i -eq 0 ) {
                     $this.Statement = "If ( {0} )" -f $e.Clauses[$i].Item1.Extent.Text
                     $this.Code = $e.Clauses[$i].Item2.Extent.Text
                 } else {
-                    $this.Children.Add([ElseIfNode]::new($e.clauses[$i].Item1,$this,$this.Statement,$e.clauses[$i].Item2))
+                    $node = [ElseIfNode]::new($e.clauses[$i].Item1,$this,$this.Statement,$e.clauses[$i].Item2)
+                    $c.AddLast([System.Collections.Generic.LinkedListNode[string]]::new($node.nodeId))
+                    $node.SameLvlNodes = $c
+                    $this.Children.Add($node)
                 }
             }
         }
 
         If ( $null -ne $e.ElseClause ) {
-            $this.Children.Add([ElseNode]::new($e.ElseClause,$this,$this.Statement))
+            $node = [ElseNode]::new($e.ElseClause,$this,$this.Statement)
+            $c.AddLast([System.Collections.Generic.LinkedListNode[string]]::new($node.nodeId))
+            $node.SameLvlNodes = $c
+            $this.Children.Add($node)
         }
 
 
-        $this.FindChildren($this.raw.Clauses[0].Item2.Statements,$this)
+        $this.FindChildren($this.raw.Clauses[0].Item2.Statements,$this,$c)
 
+    }
+
+    [string] GraphString ([System.Collections.Generic.LinkedList[String]]$LinkedList) {
+        
+        $element = $LinkedList.find($this.NodeId)
+        $String = "node $($this.NodeId)"
+
+        If ( $null -eq $element.Previous ) {
+            $String = $string +";edge -from `"Start`" -to $($this.nodeid)"
+        }
+
+        If ( $this.Children.count -gt 0 ) {
+
+            $c = [System.Collections.Generic.LinkedList[string]]::new()
+            $this.Children | % {$c.AddLast([System.Collections.Generic.LinkedListNode[string]]::new($_.nodeId))}
+
+            If ( $this.ChildElseIfIds.Count -gt 0) {
+                $String = $string +";edge -from $($this.nodeid) -to $($this.ChildElseIfIds[0]) -attributes @{label=`"False`"}"
+                #$string = $string + ";" + $this.Children[0].GraphString($c)
+            } else {
+                If ( $null -ne $this.ChildElseId ) {
+                    $String = $string +";edge -from $($this.nodeid) -to $($this.ChildElseId) -attributes @{label=`"False`"}"
+                    $Else = $this.Children.Where({$_.nodeId -eq $this.ChildElseId})
+                    $string = $string + ";" + $Else.GraphString($c)
+                } Else {
+        
+                }
+            }
+
+            If ( $null -ne $element.Next) {
+                $String = $string +";edge -from $($this.nodeid) -to $($element.next.value) -attributes @{label=`"True`"}"
+            } else {
+                $String = $string +";edge -from $($this.nodeid) -to `"End`" -attributes @{label=`"True`"}"
+            }
+            
+        } Else {
+            If ( $null -ne $element.Next) {
+                $String = $string +";edge -from $($this.nodeid) -to $($element.next.value) -attributes @{label=`"True`"}"
+            } else {
+                $String = $string +";edge -from $($this.nodeid) -to `"End`" -attributes @{label=`"True`"}"
+            }
+        }
+        return $string
     }
 
 }
@@ -271,6 +362,32 @@ Class ElseNode : node {
         $this.Statement = "Else From {0}" -f $d
         $this.FindChildren($this.raw.statements,$this)
         $this.code = $e.extent.Text
+        $this.parent.ChildElseId = $this.NodeId
+    }
+
+    [string] GraphString ([System.Collections.Generic.LinkedList[String]]$LinkedList) {
+        write-verbose "on est dans le else GRAPH"
+        $element = $LinkedList.find($this.NodeId)
+        $String = "node $($this.NodeId)"
+
+        If ( $this.Children.count -gt 0) {
+            $string = $string +";edge -from $($this.nodeid) -to $($this.Children[0])"
+
+            If ( $null -ne $element.Next) {
+                $String = $string +";edge -from $($this.nodeid) -to $($element.next.value) -attributes @{label=`"True`"}"
+            } else {
+                $String = $string +";edge -from $($this.nodeid) -to `"End`" -attributes @{label=`"True`"}"
+            }
+
+        } Else {
+            If ( $null -ne $element.Next) {
+                $String = $string +";edge -from $($this.nodeid) -to $($element.next.value)"
+            } else {
+                $String = $string +";edge -from $($this.nodeid) -to `"End`""
+            }
+        }
+
+        return $String
     }
 }
 
@@ -284,6 +401,8 @@ Class ElseIfNode : node {
         $this.Code = ($this.raw.Parent.Clauses.where({$_.Item1.extent.text -eq $item1ToSearch})).Item2.Extent.Text
 
         $this.FindChildren($this.raw.Parent.Clauses.where({$_.item1.extent.text -eq $this.raw.extent.text}).item2.Statements,$this)
+
+        $this.parent.ChildElseIfIds.Add($this.NodeId)
     }
 
 }
