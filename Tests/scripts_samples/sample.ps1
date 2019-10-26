@@ -26,6 +26,7 @@ if ($snapin -eq $null)
 } else { "plop" }
 
 if ( $truc ) {
+    foreach( $plopy in $stuffa) { "zazaz"}
     "clop"
 } elseif ( $caca ) {
     foreach( $plop in $stuff) { "zazaz"}

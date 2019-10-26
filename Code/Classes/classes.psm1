@@ -5,7 +5,19 @@ class nodeutility {
     [node[]] static ParseFile ([string]$File) {
         $ParsedFile     = [Parser]::ParseFile($file, [ref]$null, [ref]$Null)
         $RawAstDocument = $ParsedFile.FindAll({$args[0] -is [Ast]}, $false)
-        $x=$RawAstDocument | ForEach-Object{if ( $null -eq $_.parent.parent.parent ) { $t = [nodeutility]::SetNode($_); if ( $null -ne  $t) { $t} } }
+        $LinkedList = [System.Collections.Generic.LinkedList[string]]::new()
+        $x=$RawAstDocument | ForEach-Object{
+            if ( $null -eq $_.parent.parent.parent ) {
+                $t = [nodeutility]::SetNode($_)
+                if ( $null -ne  $t) {
+                    $t
+                    $LinkedNode = [System.Collections.Generic.LinkedListNode[string]]::new($t.Nodeid)
+                    $LinkedList.AddLast($LinkedNode)
+                    $t.LinkedBrothers = $LinkedList
+                    $t.LinkeddNodeId = $LinkedNode
+                }
+            }
+        }
         return $x
     }
 
@@ -88,11 +100,13 @@ class node {
     [node]$Parent
     [int]$Depth
     $File
-    hidden $DefaultShape
-    hidden $Nodeid
+    $Nodeid
+    $LinkedBrothers
+    $LinkeddNodeId
     hidden $code
     hidden $NewContent
     hidden $raw
+    hidden $DefaultShape
 
     node () {
         
@@ -117,12 +131,34 @@ class node {
 
     ## override with parent, for sublevels
     [void] FindChildren ([Ast[]]$e,[node]$f) {
+        $LinkedList = [System.Collections.Generic.LinkedList[string]]::new()
+        
         foreach ( $d in $e ) {
             If ( $d.GetType() -in [nodeutility]::GetASTitems() ) {
-                $this.Children.add([nodeutility]::SetNode($d,$f))
+                $node = [nodeutility]::SetNode($d,$f)
+                $LinkedNode = [System.Collections.Generic.LinkedListNode[string]]::new($node.Nodeid)
+                $LinkedList.AddLast($LinkedNode)
+                $node.LinkedBrothers = $LinkedList
+                $node.LinkeddNodeId = $LinkedNode
+                $this.Children.add($node)
             }
         }
     }
+
+    ##override pour le if
+    [void] FindChildren ([Ast[]]$e,[node]$f,[System.Collections.Generic.LinkedList[string]]$LinkedList) {
+        foreach ( $d in $e ) {
+            If ( $d.GetType() -in [nodeutility]::GetASTitems() ) {
+                $node = [nodeutility]::SetNode($d,$f)
+                $LinkedNode = [System.Collections.Generic.LinkedListNode[string]]::new($node.Nodeid)
+                $LinkedList.AddLast($LinkedNode)
+                $node.LinkedBrothers = $LinkedList
+                $node.LinkeddNodeId = $LinkedNode
+                $this.Children.add($node)
+            }
+        }
+    }
+
 
     [void] FindDescription () {
         $tokens=@()
@@ -212,46 +248,71 @@ Class IfNode : node {
 
     IfNode ([Ast]$e) : base ($e) {
         
+        $c = [System.Collections.Generic.LinkedList[string]]::new()
+
         If ( $e.Clauses.Count -ge 1 ) {
             for( $i=0; $i -lt $e.Clauses.Count ; $i++ ) {
                 if ( $i -eq 0 ) {
                     $this.Statement = "If ( {0} )" -f $e.Clauses[$i].Item1.Extent.Text
                     $this.Code = $e.Clauses[$i].Item2.Extent.Text
                 } else {
-                    $this.Children.Add([ElseIfNode]::new($e.clauses[$i].Item1,$this,$this.Statement,$e.clauses[$i].Item2))
+                    $node = [ElseIfNode]::new($e.clauses[$i].Item1,$this,$this.Statement,$e.clauses[$i].Item2)
+                    $LinkedNode = [System.Collections.Generic.LinkedListNode[string]]::new($node.nodeId)
+                    $c.AddLast($LinkedNode)
+                    $node.LinkedBrothers = $c
+                    $node.LinkeddNodeId = $LinkedNode
+                    $this.Children.Add($node)
                 }
             }
         }
 
         If ( $null -ne $e.ElseClause ) {
-            $this.Children.Add([ElseNode]::new($e.ElseClause,$this,$this.Statement))
+            $node = [ElseNode]::new($e.ElseClause,$this,$this.Statement)
+            $LinkedNode = [System.Collections.Generic.LinkedListNode[string]]::new($node.nodeId)
+            $c.AddLast($LinkedNode)
+            $node.LinkedBrothers = $c
+            $node.LinkeddNodeId = $LinkedNode
+            $this.Children.Add($node)
         }
         
-        $this.FindChildren($this.raw.Clauses[0].Item2.Statements,$this)
+        $this.FindChildren($this.raw.Clauses[0].Item2.Statements,$this,$c)
 
     }
 
     IfNode ([Ast]$e,[node]$f) : base ($e,$f) {
 
+        $IfLinkedList = [System.Collections.Generic.LinkedList[string]]::new()
+
         If ( $e.Clauses.Count -ge 1 ) {
             for( $i=0; $i -lt $e.Clauses.Count ; $i++ ) {
                 if ( $i -eq 0 ) {
                     $this.Statement = "If ( {0} )" -f $e.Clauses[$i].Item1.Extent.Text
                     $this.Code = $e.Clauses[$i].Item2.Extent.Text
                 } else {
-                    $this.Children.Add([ElseIfNode]::new($e.clauses[$i].Item1,$this,$this.Statement,$e.clauses[$i].Item2))
+                    $node = [ElseIfNode]::new($e.clauses[$i].Item1,$this,$this.Statement,$e.clauses[$i].Item2)
+                    $LinkedNode = [System.Collections.Generic.LinkedListNode[string]]::new($node.nodeId)
+                    $IfLinkedList.AddLast($LinkedNode)
+                    $node.LinkedBrothers = $IfLinkedList
+                    $node.LinkeddNodeId = $LinkedNode
+                    $this.Children.Add($node)
                 }
             }
         }
 
         If ( $null -ne $e.ElseClause ) {
-            $this.Children.Add([ElseNode]::new($e.ElseClause,$this,$this.Statement))
+            $node = [ElseNode]::new($e.ElseClause,$this,$this.Statement)
+            $LinkedNode = [System.Collections.Generic.LinkedListNode[string]]::new($node.nodeId)
+            $IfLinkedList.AddLast($LinkedNode)
+            $node.LinkedBrothers = $IfLinkedList
+            $node.LinkeddNodeId = $LinkedNode
+            $this.Children.Add($node)
         }
 
 
-        $this.FindChildren($this.raw.Clauses[0].Item2.Statements,$this)
+        $this.FindChildren($this.raw.Clauses[0].Item2.Statements,$this,$IfLinkedList)
 
     }
+
 
 }
 
