@@ -34,7 +34,7 @@ function Find-Node {
                $node
            } 
         } Else {
-            [nodeutility]::ParseFile($FilePath.FullName)
+            return ,[nodeutility]::ParseFile($FilePath.FullName)
         }
     }
     

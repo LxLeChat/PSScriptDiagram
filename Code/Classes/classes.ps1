@@ -13,6 +13,7 @@ class nodeutility {
                 if ( $null -ne  $t) {
                     $c.AddLast([System.Collections.Generic.LinkedListNode[string]]::new($t.nodeId))
                     $t.SameLvlNodes = $c
+                    $t.LinkedNodeId = $c.find($t.nodeId)
                     $t
                     
                 }
@@ -100,9 +101,10 @@ class node {
     [node]$Parent
     [int]$Depth
     $File
-    $SameLvlNodes
+    $Brothers
+    $LinkedNodeId
     hidden $DefaultShape
-    hidden $Nodeid
+    $Nodeid
     hidden $code
     hidden $NewContent
     hidden $raw
@@ -237,11 +239,28 @@ class node {
     [void] SetProcessNode () { 
         If ( $this.Children.Count -eq 0 ) { $this.Children.Add([ProcessNode]::new()) }
     }
+
+    [string]PushNextNode(){
+        $string = ""
+        If ( ($null -eq $this.LinkedNodeId.Next) -and ($this.Depth -eq  1) ) {
+            $string = "End"
+        }
+
+        If ( ($null -eq $this.LinkedNodeId.Next) -and ($this.Depth -ne  1) ) {
+            $string = $this.Parent.PushNexNode()
+        }
+
+        If ( $this.LinkedNodeId.Next ) {
+            $string = $this.LinkedNodeId.Next.Value
+        }
+
+        return $string
+    }
 }
 
 Class ProcessNode : node {
     [string]$Type = "Process"
-    [string]$Statement = "ProcessBlock"
+    [string]$Statement = "ProcessBlock From ($this.Parent.Statement)"
 }
 
 Class IfNode : node {
@@ -269,7 +288,6 @@ Class IfNode : node {
         }
 
         If ( $null -ne $e.ElseClause ) {
-            #$this.Children.Add([ElseNode]::new($e.ElseClause,$this,$this.Statement))
             $node = [ElseNode]::new($e.ElseClause,$this,$this.Statement)
             $c.AddLast([System.Collections.Generic.LinkedListNode[string]]::new($node.nodeId))
             $node.SameLvlNodes = $c
@@ -310,15 +328,46 @@ Class IfNode : node {
 
     }
 
-    [string] GraphString ([System.Collections.Generic.LinkedList[String]]$LinkedList) {
+    [string] GraphString () {
         
-        $element = $LinkedList.find($this.NodeId)
-        $String = "node $($this.NodeId)"
-
-        If ( $null -eq $element.Previous ) {
+        $String = "node $($this.NodeId) -attributes @{label=`"$($this.Statement)`"}"
+        $element = $this.SameLvlNodes.find($this.NodeId)
+        If ( $null -eq $Element.Previous ) {
             $String = $string +";edge -from `"Start`" -to $($this.nodeid)"
         }
 
+        If ( $this.Children.count -gt 0 ) {
+            If ( $this.Children[0].Type -eq "ElseIf" ) {
+                $String = $string +";edge -from $($this.nodeid) -to $($this.Children[0].NodeId) -attributes @{label=`"False`"}"
+                $string = $string + ";" + $this.Children[0].GraphString()
+            } ElseIf ( $this.Children[0].Type -eq "Else" ) {
+                $String = $string +";edge -from $($this.nodeid) -to $($this.Children[0].NodeId) -attributes @{label=`"False`"}"
+                $string = $string + ";" + $this.Children[0].GraphString()
+            } Else {
+                $String = $string +";edge -from $($this.nodeid) -to $($this.Children[0].NodeId) -attributes @{label=`"True`"}"
+            }
+        } Else {
+            If ( $null -ne $element.Next) {
+                $String = $string +";edge -from $($this.nodeid) -to $($element.next.value) -attributes @{label=`"True`"}"
+            } else {
+                If ( $this.depth -eq 1 ) {
+                    $String = $string +";edge -from $($this.nodeid) -to `"End`" -attributes @{label=`"True`"}"
+                } else {
+                    $String = $string +";edge -from $($this.nodeid) -to $($this.Parent.PushNextNode()) -attributes @{label=`"True`"}"
+                }
+            }
+        }
+
+        ## si on a un parent, et que c'est une loop, et qu'on est le dernier element
+        If ( ($null -ne $this.parent) -and ($null -eq $element.Next) ) {
+
+            If ( $this.parent.Type -in ("Foreach","While","For","DoUntil","DoWhile","For") ) {
+                edge -from $this.NodeId -To $this.parent.NodeId -Attributes @{Label=$($this.parent.Statement)}
+            }
+
+        }
+
+        <#
         If ( $this.Children.count -gt 0 ) {
 
             $c = [System.Collections.Generic.LinkedList[string]]::new()
@@ -350,9 +399,11 @@ Class IfNode : node {
                 $String = $string +";edge -from $($this.nodeid) -to `"End`" -attributes @{label=`"True`"}"
             }
         }
+        #>
         return $string
     }
 
+    
 }
 
 Class ElseNode : node {
@@ -362,32 +413,6 @@ Class ElseNode : node {
         $this.Statement = "Else From {0}" -f $d
         $this.FindChildren($this.raw.statements,$this)
         $this.code = $e.extent.Text
-        $this.parent.ChildElseId = $this.NodeId
-    }
-
-    [string] GraphString ([System.Collections.Generic.LinkedList[String]]$LinkedList) {
-        write-verbose "on est dans le else GRAPH"
-        $element = $LinkedList.find($this.NodeId)
-        $String = "node $($this.NodeId)"
-
-        If ( $this.Children.count -gt 0) {
-            $string = $string +";edge -from $($this.nodeid) -to $($this.Children[0])"
-
-            If ( $null -ne $element.Next) {
-                $String = $string +";edge -from $($this.nodeid) -to $($element.next.value) -attributes @{label=`"True`"}"
-            } else {
-                $String = $string +";edge -from $($this.nodeid) -to `"End`" -attributes @{label=`"True`"}"
-            }
-
-        } Else {
-            If ( $null -ne $element.Next) {
-                $String = $string +";edge -from $($this.nodeid) -to $($element.next.value)"
-            } else {
-                $String = $string +";edge -from $($this.nodeid) -to `"End`""
-            }
-        }
-
-        return $String
     }
 }
 
@@ -401,8 +426,6 @@ Class ElseIfNode : node {
         $this.Code = ($this.raw.Parent.Clauses.where({$_.Item1.extent.text -eq $item1ToSearch})).Item2.Extent.Text
 
         $this.FindChildren($this.raw.Parent.Clauses.where({$_.item1.extent.text -eq $this.raw.extent.text}).item2.Statements,$this)
-
-        $this.parent.ChildElseIfIds.Add($this.NodeId)
     }
 
 }
@@ -461,6 +484,7 @@ Class ForeachNode : node {
         $this.code = $e.body.extent.Text
         $this.FindChildren($this.raw.Body.Statements,$this)
     }
+
 }
 
 Class WhileNode : node {
