@@ -143,6 +143,16 @@ class node {
                 $this.Children.add($node)
             }
         }
+
+        <## si il n y a pas d'enfant on ajotue un process block
+        If ( $this.Children.Count -eq 0 ) {
+            $node = [BlockProcess]::new()
+            $LinkedNode = [System.Collections.Generic.LinkedListNode[string]]::new($node.Nodeid)
+            $LinkedList.AddLast($LinkedNode)
+            $node.LinkeddNodeId = $LinkedNode
+            $this.Children.add($node)
+        }
+        #>
     }
 
     ##override pour le if
@@ -157,6 +167,16 @@ class node {
                 $this.Children.add($node)
             }
         }
+
+        <## si il n y a pas d'enfant on ajotue un process block
+        If ( $this.Children.Count -eq 0 ) {
+            $node = [BlockProcess]::new()
+            $LinkedNode = [System.Collections.Generic.LinkedListNode[string]]::new($node.Nodeid)
+            $LinkedList.AddLast($LinkedNode)
+            $node.LinkeddNodeId = $LinkedNode
+            $this.Children.add($node)
+        }
+        #>
     }
 
 
@@ -239,6 +259,28 @@ class node {
 
     hidden [void] Guid (){
         $this.Nodeid = ([guid]::NewGuid()).Guid
+    }
+
+    [string] graph () {
+
+        ## dans tous les cas on cree un noeud
+        $string = "node "+ $this.Nodeid + " -attributes @{label="+ $this.Statement+"}"
+
+        if ( $this.depth -eq 1 ) {
+
+            ## si il a un noeud suivant
+            if ( $null -eq $this.LinkeddNodeId.Previous) {
+                "edge -from `"Start`" -to " + $this.Nodeid
+            }
+
+            ## si il n y a pas de noeud suivant
+            if ( $null -ne $this.LinkeddNodeId.Next ) {
+                "edge -from " + $this.Nodeid + " -to `"End`" "
+            }
+
+        }
+
+        return $string
     }
 }
 
@@ -461,3 +503,12 @@ Class DoWhileNode : node {
         $this.FindChildren($this.raw.Body.Statements,$this)
     }
 }
+
+Class BlockProcess : node {
+    [string]$Type = "BlockProcess"
+    
+    BlockProcess () {
+        $this.Statement =  "aaaa"
+    }
+}
+
