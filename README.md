@@ -1,23 +1,29 @@
-## NEED TO TRANSLATE TO ENGLISH :)
-## Reminder: it's a work in progress !
-
 # PSScriptDiagram
-Idea of the modyle: Fetching all ifs,loops etc ... to graph a diagram of an entire script (not a module...)
-Behind the scene: working with AST, created my own siplified AST (i think ...) 
-What it's not at the moment: a flowchart ... I think it's pretty complicated to code a flowchart from an existing script ... but i'll try !
+
+This PowerShell module is leveraging Abstract Syntax Tree (AST) to retrieve the different components of your code such as variables, operators, conditional operators, loops,... in order to build a graph representation of the entire script.
+
+## Usage
+
+```powershell
+# Parse the code
+$x = Find-Node -file .\script.ps1
+
+# Define a description for your parsed code
+Set-NodeDescription -node $x
+
+# Build diagram
+New-NodeGraph -node $x -UseDescription -GroupAffiliatedNodes
+```
 
 ## TODO
-RenameCmdlets
-work on valuefrompipeline for each function
-Create a buildscript to create a unique psm1 file ... at the moment you have to load the classes, then then functions manually ...
 
-example of i what i want to achieve
+* RenameCmdlets
+* Work on valuefrompipeline for each function
+* Create a buildscript to create a unique psm1 file ... at the moment you have to load the classes then functions manually ...
+* Flowchart
+
+Here is an example of what I want to achieve:
+
 ![plopy](Images/sample_subgraphs_lastchild_to_firstparent.png)
-
-
-## Cmdletq available at the moment
-$x = Find-Node -file .\script.ps1
-Set-NodeDescription -node $x
-New-NodeGraph -node $x -UseDescription -GroupAffiliatedNodes
 
 
