@@ -26,7 +26,7 @@ function Find-Node {
     }
     
     process {
-        $FilePath = Get-Item $File
+        $FilePath = Get-Item -Path $File
         Write-Verbose -Message "[Find-Node] File FullName: $($FilePath.FullName)"
         If ( $PSBoundParameters["FindDescription"].IsPresent ) {
            Foreach ( $node in [nodeutility]::ParseFile($FilePath.FullName) ) {
