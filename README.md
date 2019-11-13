@@ -1,4 +1,5 @@
 ## NEED TO TRANSLATE TO ENGLISH :)
+GO CHECK FLOWCHART --> https://github.com/LxLeChat/FLowChart
 ## Reminder: it's a work in progress !
 
 # PSScriptDiagram
